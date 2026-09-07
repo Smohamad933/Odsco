@@ -1,0 +1,90 @@
+/* Simple Editor Styles */
+.simple-editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    align-items: center;
+}
+
+.simple-editor-toolbar button {
+    padding: 6px 10px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    transition: all 0.2s;
+    min-width: 30px;
+}
+
+.simple-editor-toolbar button:hover {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+}
+
+.simple-editor-toolbar .separator {
+    width: 1px;
+    height: 25px;
+    background: #e0e0e0;
+    margin: 0 5px;
+}
+
+.simple-editor-content {
+    min-height: 200px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 0 0 12px 12px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 2;
+    outline: none;
+    transition: border-color 0.3s;
+    direction: rtl;
+    text-align: right;
+}
+
+.simple-editor-content:focus {
+    border-color: #1a1a1a;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+}
+
+.simple-editor-content h2 {
+    font-size: 20px;
+    font-weight: 900;
+    margin: 15px 0 10px;
+}
+
+.simple-editor-content h3 {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 12px 0 8px;
+}
+
+.simple-editor-content p {
+    margin-bottom: 10px;
+}
+
+.simple-editor-content ul,
+.simple-editor-content ol {
+    padding-right: 25px;
+    margin-bottom: 10px;
+}
+
+.simple-editor-content a {
+    color: #3742fa;
+    text-decoration: underline;
+}
+
+.simple-editor-content hr {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: 15px 0;
+}

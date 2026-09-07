@@ -1,0 +1,569 @@
+[
+    {
+        "id": "msg_6a86f4cdc567b",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 12:36:29",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f4dbbd689",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_001",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 12:36:43",
+        "read_by": [
+            "usr_001",
+            "usr_6a86f3700b156"
+        ]
+    },
+    {
+        "id": "msg_6a86f700b2125",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 12:45:52",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f70ca0381",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_001",
+        "content": "سلام علی جون",
+        "type": "text",
+        "timestamp": "2026-08-20 12:46:04",
+        "read_by": [
+            "usr_001",
+            "usr_6a860f21485ce"
+        ]
+    },
+    {
+        "id": "msg_6a86f71a0a7e6",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "capture_9020935919995515397 (1).jpg",
+        "type": "file",
+        "file_path": "uploads\/messenger\/file_1787229978_6a86f71a09a93_capture_9020935919995515397 (1).jpg",
+        "file_size": 0.1,
+        "timestamp": "2026-08-20 12:46:18",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f78f8c068",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_001",
+        "content": "فاک یو",
+        "type": "text",
+        "timestamp": "2026-08-20 12:48:15",
+        "read_by": [
+            "usr_001",
+            "usr_6a860f21485ce"
+        ]
+    },
+    {
+        "id": "msg_6a86f856481ba",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 12:51:34",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f863c5dcc",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "چرا آفلاینی؟",
+        "type": "text",
+        "timestamp": "2026-08-20 12:51:47",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f87c49300",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "Screenshot_2026-08-20-12-58-37-502-edit_ir.nasim.jpg",
+        "type": "file",
+        "file_path": "uploads\/messenger\/file_1787230332_6a86f87c4552f_Screenshot_2026-08-20-12-58-37-502-edit_ir.nasim.jpg",
+        "file_size": 0.5,
+        "timestamp": "2026-08-20 12:52:12",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f8805e1eb",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "هنوز درحال توسعه اس به خاطر همین",
+        "type": "text",
+        "timestamp": "2026-08-20 12:52:16",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f88bd1e0c",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 12:52:27",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f89027564",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "چرا استوری بله اتون رو برام میفرستید؟",
+        "type": "text",
+        "timestamp": "2026-08-20 12:52:32",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f89522530",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "مومنی میگه 2 برابر زیاده",
+        "type": "text",
+        "timestamp": "2026-08-20 12:52:37",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f8a1c61c2",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "مال من نبود ولی برای تست بود",
+        "type": "text",
+        "timestamp": "2026-08-20 12:52:49",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86f8aa16d74",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "1.5 برابرش کن",
+        "type": "text",
+        "timestamp": "2026-08-20 12:52:58",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f8bb97c04",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "نکته بعدی ارومیه ها رو چک نکردیم",
+        "type": "text",
+        "timestamp": "2026-08-20 12:53:15",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f8c973e8c",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "اها",
+        "type": "text",
+        "timestamp": "2026-08-20 12:53:29",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f8d62969e",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "1.75 خیرش رو ببینی",
+        "type": "text",
+        "timestamp": "2026-08-20 12:53:42",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_6a860f21485ce"
+        ]
+    },
+    {
+        "id": "msg_6a86f8dbba727",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "اوکی",
+        "type": "text",
+        "timestamp": "2026-08-20 12:53:47",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86f90b1460d",
+        "conversation_id": "conv_6a86f885dc77b",
+        "sender_id": "usr_6a860f21485ce",
+        "content": "آذربایجان ها؟",
+        "type": "text",
+        "timestamp": "2026-08-20 12:54:35",
+        "read_by": [
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "msg_6a86fa65f0e86",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 13:00:21",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86fa6a6bcb8",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 13:00:26",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86fa6c80fb5",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "سیب",
+        "type": "text",
+        "timestamp": "2026-08-20 13:00:28",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86fa6dbf4c7",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "سیب",
+        "type": "text",
+        "timestamp": "2026-08-20 13:00:29",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ]
+    },
+    {
+        "id": "msg_6a86fb11ef54a",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_001",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 13:03:13",
+        "read_by": [
+            "usr_001",
+            "usr_6a86f3700b156"
+        ]
+    },
+    {
+        "id": "msg_6a886edebe06f",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_001",
+        "content": "sghl",
+        "type": "text",
+        "timestamp": "2026-08-21 15:29:34",
+        "read_by": [
+            "usr_001",
+            "usr_6a86f3700b156"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a886ef113cab",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "chasddkjfhs",
+        "type": "text",
+        "timestamp": "2026-08-21 15:29:53",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a886f0a8c004",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_001",
+        "content": "Screenshot 2026-06-19 184813.png",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/msg_1787326218_6a886f0a8ac31_Screenshot 2026-06-19 184813.png",
+        "file_size": 0,
+        "file_ext": "png",
+        "timestamp": "2026-08-21 15:30:18",
+        "read_by": [
+            "usr_001",
+            "usr_6a86f3700b156"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a8c201e54767",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "210",
+        "type": "text",
+        "timestamp": "2026-08-24 10:42:38",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a8c203eacff0",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "گلستان.png",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/msg_1787568190_6a8c203ea28ef_گلستان.png",
+        "file_size": 1.5,
+        "file_ext": "png",
+        "timestamp": "2026-08-24 10:43:10",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a8c7d16262d1",
+        "conversation_id": "conv_6a86f48d9dfab",
+        "sender_id": "usr_001",
+        "content": "20260521_191748.jpg",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/msg_1787591958_6a8c7d162386e_20260521_191748.jpg",
+        "file_size": 0.6,
+        "file_ext": "jpg",
+        "timestamp": "2026-08-24 17:19:18",
+        "read_by": [
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a8c7dd534734",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_001",
+        "content": "20260521_191748.jpg",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/msg_1787592149_6a8c7dd53358c.jpg",
+        "file_size": 0.62,
+        "file_ext": "jpg",
+        "timestamp": "2026-08-24 17:22:29",
+        "read_by": [
+            "usr_001",
+            "usr_6a860f21485ce"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a8c7e92ce17a",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_001",
+        "content": "20260521_191748.jpg",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/msg_1787592338_6a8c7e92ccbf7.jpg",
+        "file_size": 0.62,
+        "file_ext": "jpg",
+        "timestamp": "2026-08-24 17:25:38",
+        "read_by": [
+            "usr_001",
+            "usr_6a860f21485ce"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a8c826c2b7ba",
+        "conversation_id": "conv_6a86f676c72d8",
+        "sender_id": "usr_001",
+        "content": "20260521_191748.jpg",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/msg_1787593324_6a8c826c238ac.jpg",
+        "file_size": 0.62,
+        "timestamp": "2026-08-24 17:42:04",
+        "read_by": [
+            "usr_001",
+            "usr_6a860f21485ce"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bed25e84e8",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-09-05 10:21:25",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bed6dcbffd",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "ارادت",
+        "type": "text",
+        "timestamp": "2026-09-05 10:22:37",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bed72bbd90",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "hi",
+        "type": "text",
+        "timestamp": "2026-09-05 10:22:42",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bed78f363c",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "خوب هستید؟",
+        "type": "text",
+        "timestamp": "2026-09-05 10:22:48",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bedca95b42",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-09-05 10:24:10",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bedd4b7788",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "hi",
+        "type": "text",
+        "timestamp": "2026-09-05 10:24:20",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9beddccd463",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "یتبحیستبس",
+        "type": "text",
+        "timestamp": "2026-09-05 10:24:28",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "msg_6a9bedefc0f16",
+        "conversation_id": "conv_6a86f67516a1f",
+        "sender_id": "usr_001",
+        "content": "dnslistall.txt",
+        "type": "file",
+        "file_type": "document",
+        "file_path": "uploads\/messenger\/msg_1788603887_6a9bedefc0019.txt",
+        "file_size": 0,
+        "timestamp": "2026-09-05 10:24:47",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    }
+]

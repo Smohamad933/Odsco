@@ -1,0 +1,43 @@
+[
+    {
+        "id": "conv_6a86f48d9dfab",
+        "user_1": "usr_001",
+        "user_2": "usr_6a86f3700b156",
+        "created_at": "2026-08-20 12:35:25",
+        "pinned_messages": []
+    },
+    {
+        "id": "conv_6a86f67516a1f",
+        "user_1": "usr_001",
+        "user_2": "usr_6a855f6e3652d",
+        "created_at": "2026-08-20 12:43:33",
+        "pinned_messages": []
+    },
+    {
+        "id": "conv_6a86f676c72d8",
+        "user_1": "usr_001",
+        "user_2": "usr_6a860f21485ce",
+        "created_at": "2026-08-20 12:43:34",
+        "pinned_messages": []
+    },
+    {
+        "id": "conv_6a86f7e58552f",
+        "user_1": "usr_6a860f21485ce",
+        "user_2": "usr_6a85fb5ea5c53",
+        "created_at": "2026-08-20 12:49:41",
+        "pinned_messages": []
+    },
+    {
+        "id": "conv_6a86f885dc77b",
+        "user_1": "usr_6a860f21485ce",
+        "user_2": "usr_6a855f6e3652d",
+        "created_at": "2026-08-20 12:52:21",
+        "pinned_messages": []
+    },
+    {
+        "id": "conv_6a87062da8a43",
+        "user_1": "usr_001",
+        "user_2": "usr_6a85fb5ea5c53",
+        "created_at": "2026-08-20 13:50:37"
+    }
+]

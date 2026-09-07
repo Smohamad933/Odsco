@@ -1,0 +1,74 @@
+[
+    {
+        "id": "gmsg_6a86f7c69dd05",
+        "group_id": "grp_6a86f7be6d1fa",
+        "sender_id": "usr_001",
+        "content": "سلام دوستان",
+        "type": "text",
+        "timestamp": "2026-08-20 12:49:10",
+        "read_by": [
+            "usr_001",
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "gmsg_6a86f7e6dc7c6",
+        "group_id": "grp_6a86f7be6d1fa",
+        "sender_id": "usr_6a86f3700b156",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-08-20 12:49:42",
+        "read_by": [
+            "usr_6a86f3700b156",
+            "usr_001",
+            "usr_6a860f21485ce",
+            "usr_6a855f6e3652d"
+        ]
+    },
+    {
+        "id": "gmsg_6a8c7d0dc5832",
+        "group_id": "grp_6a86fccaab9a7",
+        "sender_id": "usr_001",
+        "content": "20260521_191748.jpg",
+        "type": "file",
+        "file_type": "image",
+        "file_path": "uploads\/messenger\/gmsg_1787591949_6a8c7d0dbb55b_20260521_191748.jpg",
+        "file_size": 0.6,
+        "timestamp": "2026-08-24 17:19:09",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "gmsg_6a9bee29e7bdf",
+        "group_id": "grp_6a86f7be6d1fa",
+        "sender_id": "usr_001",
+        "content": "سلام",
+        "type": "text",
+        "timestamp": "2026-09-05 10:25:45",
+        "read_by": [
+            "usr_001",
+            "usr_6a855f6e3652d"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    },
+    {
+        "id": "gmsg_6a9bee328a7dd",
+        "group_id": "grp_6a86f7be6d1fa",
+        "sender_id": "usr_6a855f6e3652d",
+        "content": "خوب هستید؟",
+        "type": "text",
+        "timestamp": "2026-09-05 10:25:54",
+        "read_by": [
+            "usr_6a855f6e3652d",
+            "usr_001"
+        ],
+        "deleted_for_everyone": false,
+        "deleted_for": []
+    }
+]

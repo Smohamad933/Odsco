@@ -1,0 +1,81 @@
+{
+    "users": [
+        {
+            "id": "usr_001",
+            "username": "mohusyn",
+            "password": "$2y$12$hHjnPHaN.Ie4AolOjYnFLeu9NegNZSLINpM1cwSkKQXFT4cIn5OCi",
+            "role": "admin",
+            "full_name": "محمد حسین شیخ الاسلامی",
+            "email": "mohusyn@ofogh-danesh.ir",
+            "created_at": "2026-08-19 07:18:18",
+            "is_active": true,
+            "photo": "uploads\/users\/user_17871705136a860ed19309b.png",
+            "phone": "",
+            "bio": "",
+            "updated_at": "2026-08-19 18:50:06",
+            "last_login": "2026-09-04 13:55:59",
+            "messenger_enabled": true
+        },
+        {
+            "id": "usr_6a855f6e3652d",
+            "username": "Seyed2dot",
+            "password": "$2y$12$aEFO\/0kif68t\/LlRWJpKHeuC08f015j4L6yskk0fgxwOxhbQBj8tG",
+            "role": "admin",
+            "full_name": "سید مصطفی شیخ الاسلامی",
+            "email": "",
+            "created_at": "2026-08-19 07:46:54",
+            "is_active": true,
+            "photo": "uploads\/users\/1787165430_1-prf.png",
+            "phone": "09161148583",
+            "bio": "",
+            "updated_at": "2026-08-19 18:50:30",
+            "last_login": "2026-09-03 11:25:35",
+            "messenger_enabled": true
+        },
+        {
+            "id": "usr_6a85fb5ea5c53",
+            "username": "alirezahashemi",
+            "password": "$2y$12$6bdyg6L0.UdIkMRE5\/CZx.jEBkh5l3CbPasFbuRWIwC9YB2A.Pd3q",
+            "role": "admin",
+            "full_name": "سید علیرضا هاشمی",
+            "email": "",
+            "phone": "",
+            "photo": "uploads\/users\/user_17871703996a860e5f107fb.png",
+            "bio": "",
+            "created_at": "2026-08-19 18:52:15",
+            "last_login": "2026-08-19 20:13:35",
+            "is_active": true,
+            "messenger_enabled": true
+        },
+        {
+            "id": "usr_6a860f21485ce",
+            "username": "alishikh570",
+            "password": "$2y$12$\/UvodnfTnNA\/HOYyAdm.YeUu8f9dTdoun\/FpJT.gZy29orYfNYZxq",
+            "role": "manager",
+            "full_name": "سید علی شیخ الاسلامی",
+            "email": "",
+            "phone": "09209302611",
+            "photo": "uploads\/users\/user_17871705936a860f2148212.png",
+            "bio": "",
+            "created_at": "2026-08-19 20:16:33",
+            "last_login": "2026-09-03 11:09:27",
+            "is_active": true,
+            "messenger_enabled": true
+        },
+        {
+            "id": "usr_6a86f3700b156",
+            "username": "test",
+            "password": "$2y$12$N4gs2ZeGne8JZqGldYUvqe\/5r7wp1CddrZWYLaauqHSUaG5THDG.C",
+            "role": "viewer",
+            "full_name": "تست پیام رسان",
+            "email": "",
+            "phone": "",
+            "photo": "uploads\/users\/user_17872290406a86f3700ae4e.png",
+            "bio": "",
+            "created_at": "2026-08-20 12:30:40",
+            "last_login": null,
+            "is_active": false,
+            "messenger_enabled": true
+        }
+    ]
+}

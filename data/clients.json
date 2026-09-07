@@ -1,0 +1,58 @@
+[
+    {
+        "id": "cl_6a9aa7b4c637f",
+        "name": "آبان بسپار",
+        "logo": "uploads\/clients\/client_1788520372_6a9aa7b4c552b.png",
+        "website": "https:\/\/abt-pipe.ir\/",
+        "order": 1,
+        "created_at": "2026-09-04 11:12:52"
+    },
+    {
+        "id": "cl_6a9aa8056bdae",
+        "name": "انجمن مهندسان طراح و ناظر استان خوزستان",
+        "logo": "uploads\/clients\/client_1788520453_6a9aa8056b705.png",
+        "website": "",
+        "order": 2,
+        "created_at": "2026-09-04 11:14:13"
+    },
+    {
+        "id": "cl_6a9aa82f18725",
+        "name": "دانشگاه علم و فنون",
+        "logo": "uploads\/clients\/client_1788520495_6a9aa82f17f86.png",
+        "website": "",
+        "order": 3,
+        "created_at": "2026-09-04 11:14:55"
+    },
+    {
+        "id": "cl_6a9aa83fdfcbb",
+        "name": "توسعه نیشکر",
+        "logo": "uploads\/clients\/client_1788520511_6a9aa83fdf5ff.png",
+        "website": "",
+        "order": 1,
+        "created_at": "2026-09-04 11:15:11"
+    },
+    {
+        "id": "cl_6a9aa866a6d36",
+        "name": "فولاد خوزستان",
+        "logo": "uploads\/clients\/client_1788520550_6a9aa866a47ba.png",
+        "website": "",
+        "order": 1,
+        "created_at": "2026-09-04 11:15:50"
+    },
+    {
+        "id": "cl_6a9aa87234125",
+        "name": "پیشگامان",
+        "logo": "uploads\/clients\/client_1788520562_6a9aa87231d79.png",
+        "website": "",
+        "order": 1,
+        "created_at": "2026-09-04 11:16:02"
+    },
+    {
+        "id": "cl_6a9aa8847597f",
+        "name": "شهبازی",
+        "logo": "uploads\/clients\/client_1788520580_6a9aa884752e5.png",
+        "website": "",
+        "order": 1,
+        "created_at": "2026-09-04 11:16:20"
+    }
+]
