@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-define('ODSCO_ROOT', dirname(__DIR__));
-define('BASE_PATH', ODSCO_ROOT);
-define('DATA_PATH', ODSCO_ROOT . '/data');
-define('UPLOAD_PATH', ODSCO_ROOT . '/uploads');
+if (!defined('ODSCO_ROOT')) define('ODSCO_ROOT', dirname(__DIR__));
+if (!defined('BASE_PATH'))   define('BASE_PATH', ODSCO_ROOT);
+if (!defined('DATA_PATH'))   define('DATA_PATH', ODSCO_ROOT . '/data');
+if (!defined('UPLOAD_PATH')) define('UPLOAD_PATH', ODSCO_ROOT . '/uploads');
 
 require_once ODSCO_ROOT . '/includes/db.php';
 require_once ODSCO_ROOT . '/includes/schema.php';
@@ -305,7 +305,13 @@ code{background:var(--bg);padding:2px 7px;border-radius:6px;font-size:11.5px;dir
     <?php elseif ($step === 1): ?>
     <div class="card">
         <h2>۱) اطلاعات MySQL</h2>
-        <p class="sub">این اطلاعات را از پنل هاست خود (cPanel / DirectAdmin) بردارید. دیتابیس باید از قبل ساخته شده باشد.</p>
+        <p class="sub">
+            روی هاست اشتراکی (cPanel / DirectAdmin) این اطلاعات را از پنل بردارید.
+            روی سرور اختصاصی با <b>IIS</b>، همان کاربری است که MySQL برایش ساخته‌اید
+            (معمولاً <code>root</code> یا یک کاربر اختصاصی) و آدرس هم <code>127.0.0.1</code> است.
+            دیتابیس باید از قبل ساخته شده باشد.
+        </p>
+        <p class="sub">🩺 اگر مطمئن نیستید سرور آماده است، اول <a href="check.php" style="color:#5288c1">صفحه بررسی سرور</a> را باز کنید.</p>
         <form method="post">
             <input type="hidden" name="action" value="save_db">
             <input type="hidden" name="step" value="1">

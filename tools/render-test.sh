@@ -57,6 +57,10 @@ for p in index.php about/index.php services/index.php blog/index.php project/ind
   [ -f "$p" ] && run "$p" "" public
 done
 
+echo; echo "── نصب‌کننده ────────────────────────────────────────────"
+run install/index.php "" public
+run install/check.php "" public
+
 echo; echo "── پنل مدیریت ───────────────────────────────────────────"
 run admin/dashboard.php
 run admin/workspace.php

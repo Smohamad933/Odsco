@@ -49,6 +49,16 @@ check('اجرای دوباره بدون خطا', count($res['errors'] ?? []) ===
 check('جدول جدید ساخته نشد', count($res['created']) === 0, 'created=' . count($res['created']));
 check('همه جدول‌ها موجود', count($res['skipped']) === 34, 'skipped=' . count($res['skipped']));
 
+section('پیکربندی دیتابیس');
+$cfg = Db::normalizeConfig(['driver' => 'mysql', 'host' => 'localhost', 'port' => 3306,
+                            'database' => 'odsco_db', 'username' => 'odsco_user', 'password' => 'p@ss']);
+check('کلید database به name نگاشت می‌شود', ($cfg['name'] ?? '') === 'odsco_db', json_encode($cfg));
+check('کلید username به user نگاشت می‌شود', ($cfg['user'] ?? '') === 'odsco_user', json_encode($cfg));
+check('کلید password به pass نگاشت می‌شود', ($cfg['pass'] ?? '') === 'p@ss', json_encode($cfg));
+
+$cfg2 = Db::normalizeConfig(['driver' => 'mysql', 'dbname' => 'alt_db', 'name' => 'real_db', 'user' => 'u', 'pass' => 'p']);
+check('کلید اصلی بر جایگزین اولویت دارد', ($cfg2['name'] ?? '') === 'real_db', json_encode($cfg2));
+
 section('مهاجرت داده‌های واقعی');
 $mig = Migrator::run();
 check('بدون خطا', count($mig['errors']) === 0, implode('; ', array_slice($mig['errors'], 0, 3)));

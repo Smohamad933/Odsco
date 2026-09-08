@@ -19,7 +19,15 @@
    - داده‌های قدیمی `data/*.json` را به دیتابیس **مهاجرت** می‌کند
    - فایل `includes/config.local.php` را می‌نویسد (این فایل در گیت نیست، چون رمز دیتابیس دارد)
 
-### ج) نصب دستی (بدون ویزارد)
+### ج) بررسی سرور قبل از نصب
+```
+https://yoursite.com/install/check.php
+```
+این صفحه فقط می‌خواند و چیزی را تغییر نمی‌دهد؛ نسخه PHP، افزونه `pdo_mysql`،
+دستیاری نوشتن پوشه‌ها و در نهایت **اتصال واقعی به MySQL** را آزمایش می‌کند و
+برای هر مورد راه‌حل می‌دهد.
+
+### د) نصب دستی (بدون ویزارد)
 ```bash
 mysql -u USER -p DBNAME < database/schema.mysql.sql
 ```
@@ -27,19 +35,61 @@ mysql -u USER -p DBNAME < database/schema.mysql.sql
 ```php
 <?php
 return [
-    'driver'   => 'mysql',
-    'host'     => 'localhost',
-    'port'     => 3306,
-    'database' => 'odsco',
-    'username' => 'odsco_user',
-    'password' => '••••••••',
-    'charset'  => 'utf8mb4',
-    'prefix'   => '',
-    'debug'    => false,
+    'driver'  => 'mysql',
+    'host'    => '127.0.0.1',
+    'port'    => 3306,
+    'name'    => 'odsco',
+    'user'    => 'odsco_user',
+    'pass'    => '••••••••',
+    'charset' => 'utf8mb4',
+    'prefix'  => '',
+    'debug'   => false,
 ];
 ```
+> کلیدها `name` / `user` / `pass` هستند. اگر اشتباهاً `database` / `username` /
+> `password` بنویسید هم کار می‌کند — `Db::normalizeConfig()` هر دو شکل را می‌پذیرد.
 
-### د) زمان‌بندی (Cron)
+### ه) نصب روی IIS (ویندوز)
+۱. **PHP**: نسخه ۸.۱ یا بالاتر را در `C:\php` استخراج کنید، `php.ini-development`
+   را به `php.ini` تغییر نام دهید و این خطوط را از کامنت خارج کنید:
+   ```ini
+   extension_dir = "ext"
+   extension=pdo_mysql
+   extension=mbstring
+   extension=fileinfo
+   extension=gd
+   extension=openssl
+   extension=curl
+   upload_max_filesize = 64M
+   post_max_size = 64M
+   date.timezone = Asia/Tehran
+   ```
+   سپس `C:\php` را به `PATH` ویندوز اضافه کنید و در IIS Manager →
+   *Handler Mappings* ماژول **FastCGI** را روی `C:\php\php-cgi.exe` تنظیم کنید
+   (همان مسیری که در `web.config` پروژه نوشته شده).
+
+۲. **MySQL**: سرویس MySQL باید در `services.msc` در حال اجرا باشد.
+   دیتابیس را با `utf8mb4` بسازید:
+   ```sql
+   CREATE DATABASE odsco CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'odsco_user'@'localhost' IDENTIFIED BY 'رمز-قوی';
+   GRANT ALL PRIVILEGES ON odsco.* TO 'odsco_user'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+
+۳. **دسترسی نوشتن**: روی پوشه سایت کلیک‌راست → Properties → Security و به
+   `IIS_IUSRS` و کاربرِ Application Pool دسترسی **Modify** بدهید.
+   بدون این، نصب‌کننده نمی‌تواند `includes/config.local.php` را بنویسد و
+   آپلود فایل در پیام‌رسان کار نمی‌کند.
+
+۴. **اجرا**: `https://yoursite.com/install/check.php` را باز کنید؛ وقتی همه‌چیز
+   سبز شد به `install/` بروید.
+
+> `web.config` همراه پروژه، پوشه‌های `includes/`, `data/`, `tools/`, `database/`
+> و پسوندهای `.json`, `.sql`, `.sqlite`, `.lock` را از دسترسی بیرون блоки می‌کند.
+> این را حذف نکنید — `data/users.json` هش رمز عبور دارد.
+
+### و) زمان‌بندی (Cron)
 روزی یک‌بار برای اجرای خودکارسازی‌ها:
 ```
 0 7 * * * php /path/to/site/tools/cron.php --key=YOUR_CRON_KEY
@@ -49,6 +99,13 @@ return [
 https://yoursite.com/tools/cron.php?key=YOUR_CRON_KEY
 ```
 کلید را در **پنل مدیریت → تنظیمات → زمان‌بندی** بسازید و عوض کنید.
+
+روی **ویندوز/IIS** به‌جای cron از Task Scheduler استفاده کنید:
+```
+Program:  C:\php\php.exe
+Argument: C:\inetpub\wwwroot\odsco\tools\cron.php --key=YOUR_CRON_KEY
+Trigger:  Daily 07:00
+```
 
 ---
 
@@ -61,6 +118,7 @@ https://yoursite.com/tools/cron.php?key=YOUR_CRON_KEY
 | پیام‌رسان | `/messenger/` | چت داخلی شبیه تلگرام |
 | پنل کارفرما | `/client/` | ورود جداگانه کارفرمایان برای دیدن پیشرفت پروژه‌ها |
 | نصب‌کننده | `/install/` | فقط تا قبل از نصب |
+| بررسی سرور | `/install/check.php` | نسخه PHP، pdo_mysql، دسترسی نوشتن، اتصال MySQL |
 
 ---
 
@@ -169,9 +227,13 @@ messenger/assets/
   messenger.js    کلاینت API + رندر
   chat.js         کنترل‌کننده گفتگو
 
+install/
+  index.php       نصب‌کننده ۵ مرحله‌ای
+  check.php       بررسی سرور قبل از نصب (فقط خواندنی)
+
 tools/
   run-tests.sh    اجرای همه مراحل تست (۱ تا ۶)
-  smoke-test.php  ۱۷۹ assertion روی مسیرهای واقعی کد
+  smoke-test.php  ۱۸۳ assertion روی مسیرهای واقعی کد
   check-api.php   بررسی سازگاری همه فراخوانی‌ها با API واقعی
   render-test.sh  رندر واقعی ۴۵ صفحه با نشست واقعی
   api-test.php    فراخوانی واقعی ۳۱ اکشن از ۳۲ اکشن messenger/api.php
@@ -197,9 +259,9 @@ bash tools/run-tests.sh
 |---|---|---|
 | ۱ | بررسی نحوی همه فایل‌های PHP (`php -l`) | `✅ همه فایل‌ها بدون خطای نحوی` |
 | ۲ | نصب اسکیمای دیتابیس تست + مهاجرت داده‌های واقعی | `۳۴ جدول / ۳۴۱ رکورد` |
-| ۳ | تست یکپارچه | `نتیجه: 179 موفق / 0 ناموفق` |
-| ۴ | سازگاری فراخوانی‌ها با API واقعی | `۲,۰۳۲ فراخوانی بررسی شد` |
-| ۵ | رندر واقعی صفحه‌ها | `نتیجه رندر: 45 موفق / 0 ناموفق` |
+| ۳ | تست یکپارچه | `نتیجه: 183 موفق / 0 ناموفق` |
+| ۴ | سازگاری فراخوانی‌ها با API واقعی | `۲,۰۳۶ فراخوانی بررسی شد` |
+| ۵ | رندر واقعی صفحه‌ها | `نتیجه رندر: 47 موفق / 0 ناموفق` |
 | ۶ | اکشن‌های API پیام‌رسان | `نتیجه API: 65 موفق / 0 ناموفق` |
 
 > اکشن `upload` از `messenger/api.php` چون به `$_FILES` نیاز دارد در مرحله ۶ صدا زده

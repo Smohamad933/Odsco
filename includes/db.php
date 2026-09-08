@@ -40,6 +40,7 @@ final class Db
             return self::$instance;
         }
 
+        $cfg    = self::normalizeConfig($cfg);
         $driver = strtolower((string)($cfg['driver'] ?? 'mysql'));
         $self   = new self();
         $self->driver = $driver === 'sqlite' ? 'sqlite' : 'mysql';
@@ -85,6 +86,26 @@ final class Db
 
         self::$instance = $self;
         return $self;
+    }
+
+    /**
+     * یکسان‌سازی نام کلیدهای پیکربندی.
+     * بعضی‌ها به‌جای name/user/pass از database/username/password استفاده می‌کنند؛
+     * هر دو شکل پذیرفته می‌شود.
+     *
+     * @param  array<string,mixed> $cfg
+     * @return array<string,mixed>
+     */
+    public static function normalizeConfig(array $cfg): array
+    {
+        foreach (['name' => ['database', 'dbname'], 'user' => ['username'], 'pass' => ['password']] as $key => $alts) {
+            if (empty($cfg[$key])) {
+                foreach ($alts as $alt) {
+                    if (!empty($cfg[$alt])) { $cfg[$key] = $cfg[$alt]; break; }
+                }
+            }
+        }
+        return $cfg;
     }
 
     /** خطای اتصال به دیتابیس — پیام فارسی و قابل فهم برای کاربر */
