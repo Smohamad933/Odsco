@@ -1,372 +1,368 @@
 <?php
-require_once 'config.php';
+/**
+ * ============================================================================
+ *  Odsco Messenger — صفحه گفتگو (خصوصی / گروه / پیام‌های ذخیره‌شده)
+ * ----------------------------------------------------------------------------
+ *  ?conversation=<uid>   گفتگوی خصوصی
+ *  ?user=<uid>           ساخت/بازکردن گفتگو با یک کاربر
+ *  ?group=<uid>          گروه
+ *  ?saved=1              پیام‌های ذخیره‌شده
+ * ============================================================================
+ */
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
 
 m_check_login();
 
-$me = m_current_user();
-$my_id = $me['id'];
+$me    = m_current_user();
+$myUid = $me['uid'];
 
-$conversation_id = $_GET['conversation'] ?? '';
-$other_user_id = $_GET['user'] ?? '';
+$type = 'private';
+$uid  = '';
+$headName = '';
+$headSub  = '';
+$headPhoto = '';
+$headOnline = false;
+$group = null;
+$error = '';
 
-// ایجاد چت جدید
-if ($other_user_id) {
-    $conversation_id = m_find_or_create_conversation($my_id, $other_user_id);
+// ---------------------------------------------------------------------------
+// تشخیص نوع چت
+// ---------------------------------------------------------------------------
+if (isset($_GET['saved'])) {
+    $type = 'saved';
+    $uid  = $myUid;
+    $headName = 'پیام‌های ذخیره‌شده';
+    $headSub  = 'فقط خودتان می‌بینید · روی این دستگاه ذخیره می‌شود';
+
+} elseif (!empty($_GET['group'])) {
+    $type = 'group';
+    $uid  = (string)$_GET['group'];
+    $group = Messenger::groupInfo($uid);
+    if (!$group) {
+        $error = 'گروه پیدا نشد';
+    } elseif (!Messenger::isGroupMember($uid, $myUid)) {
+        $error = 'شما عضو این گروه نیستید';
+    } else {
+        $headName = $group['name'];
+        $headSub = fa_number($group['member_count']) . ' عضو';
+        $headPhoto = $group['avatar'];
+    }
+
+} elseif (!empty($_GET['user'])) {
+    $target = (string)$_GET['user'];
+    if ($target === $myUid) {
+        redirect('chat.php?saved=1');
+    }
+    $other = Users::find($target);
+    if (!$other) {
+        $error = 'کاربر پیدا نشد';
+    } else {
+        $uid = Messenger::conversationFor($myUid, $target);
+        redirect('chat.php?conversation=' . $uid);
+    }
+
+} elseif (!empty($_GET['conversation'])) {
+    $uid = (string)$_GET['conversation'];
+    $info = Messenger::conversationInfo($uid, $myUid);
+    if (!$info) {
+        $error = 'گفتگو پیدا نشد';
+    } else {
+        $headName = $info['name'];
+        $headPhoto = $info['photo'];
+        $headOnline = $info['online'];
+        $headSub = $info['online'] ? 'آنلاین' : m_presence_text($info['other_uid']);
+    }
 }
 
-if (empty($conversation_id)) {
-    header('Location: index.php');
-    exit;
+if ($error !== '') {
+    m_set_flash('⚠️ ' . $error);
+    redirect('index.php');
 }
 
-// پیدا کردن کاربر مقابل
-$other_id = m_other_user_id($conversation_id, $my_id);
-$other_user = m_get_user($other_id);
+$chatKey = match ($type) { 'group' => 'g:' . $uid, 'saved' => 's:' . $uid, default => 'p:' . $uid };
+$activeChatKey = $chatKey;
 
-if (!$other_user) {
-    header('Location: index.php');
-    exit;
+// علامت‌گذاری خوانده‌شده + ثبت حضور
+Messenger::markRead($type, $uid, $myUid);
+Messenger::touchPresence($myUid);
+
+$canPost = true;
+if ($type === 'group' && $group && $group['only_admins_post']) {
+    $canPost = in_array(Messenger::groupRole($uid, $myUid), ['owner', 'admin'], true) || m_is_admin();
 }
 
-// دریافت پیام‌ها
-$chat_messages = m_get_private_messages($conversation_id, $my_id);
+$otherUid = $type === 'private' ? (string)(Messenger::otherUid($uid, $myUid) ?? '') : '';
 
-// علامت‌گذاری خوانده شده
-m_mark_private_read($conversation_id, $my_id);
-
-// ثبت آنلاین
-m_heartbeat($my_id);
-
-include 'sidebar.php';
+m_head(($headName ?: 'گفتگو') . ' · پیام‌رسان');
 ?>
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>چت با <?php echo $other_user['full_name']; ?></title>
-    <style>
-        @font-face {
-            font-family: 'Abar';
-            src: url('../assets/abarfanum-vf.ttf') format('truetype');
-            font-weight: 100 900;
-            font-display: swap;
-        }
-        
-        :root {
-            --tg-bg: #0e1621;
-            --tg-sidebar: #17212b;
-            --tg-hover: #202b36;
-            --tg-active: #2b5278;
-            --tg-text: #ffffff;
-            --tg-muted: #708499;
-            --tg-accent: #5288c1;
-            --tg-online: #4dcd5e;
-            --tg-msg-sent: #2b5278;
-            --tg-msg-received: #17212b;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Abar', sans-serif; background: var(--tg-bg); color: var(--tg-text); overflow: hidden; height: 100vh; }
-        
-        .app { display: flex; height: 100vh; }
-        
-        /* سایدبار */
-        .sidebar { width: 380px; background: var(--tg-sidebar); border-left: 1px solid #0b1219; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
-        .search-input { flex: 1; padding: 10px 15px; background: var(--tg-bg); border: none; border-radius: 20px; font-family: inherit; font-size: 13px; color: var(--tg-text); outline: none; }
-        
-        .chat-list { flex: 1; overflow-y: auto; }
-        .chat-item { display: flex; align-items: center; padding: 10px 12px; cursor: pointer; text-decoration: none; color: inherit; }
-        .chat-item:hover { background: var(--tg-hover); }
-        .chat-item.active { background: var(--tg-active); }
-        .avatar {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: var(--tg-accent);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; color: #fff;
-            margin-left: 10px; flex-shrink: 0;
-        }
-        .chat-name { font-size: 14px; font-weight: 700; }
-        .chat-preview { font-size: 12px; color: var(--tg-muted); }
-        .unread-badge { background: var(--tg-accent); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
-        
-        /* بخش چت */
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--tg-bg); }
-        
-        .chat-header {
-            padding: 10px 15px;
-            background: var(--tg-sidebar);
-            border-bottom: 1px solid #0b1219;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .back-btn { color: var(--tg-muted); text-decoration: none; font-size: 18px; }
-        
-        .messages-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .message {
-            max-width: 55%;
-            padding: 8px 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        .message.sent {
-            align-self: flex-end;
-            background: var(--tg-msg-sent);
-            border-bottom-left-radius: 4px;
-        }
-        .message.received {
-            align-self: flex-start;
-            background: var(--tg-msg-received);
-            border-bottom-right-radius: 4px;
-        }
-        .message-time {
-            font-size: 10px;
-            opacity: 0.6;
-            display: block;
-            text-align: left;
-            margin-top: 3px;
-        }
-        
-        /* فایل و عکس */
-        .image-message img {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .file-message { display: flex; align-items: center; gap: 8px; }
-        .file-icon { font-size: 25px; }
-        .file-name { font-size: 11px; word-break: break-all; }
-        .file-size { font-size: 9px; opacity: 0.7; }
-        .file-link { color: #fff; text-decoration: none; font-size: 16px; }
-        .message.received .file-link { color: var(--tg-accent); }
-        
-        .input-area {
-            padding: 10px 15px;
-            background: var(--tg-sidebar);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .chat-input {
-            flex: 1;
-            padding: 10px 15px;
-            background: var(--tg-bg);
-            border: none;
-            border-radius: 18px;
-            font-family: inherit;
-            font-size: 13px;
-            color: var(--tg-text);
-            outline: none;
-        }
-        .file-btn {
-            width: 38px; height: 38px;
-            border-radius: 50%;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            color: var(--tg-muted);
-            font-size: 16px;
-        }
-        .file-btn:hover { background: var(--tg-hover); }
-        .send-btn {
-            width: 42px; height: 42px;
-            border-radius: 50%;
-            background: var(--tg-accent);
-            border: none;
-            cursor: pointer;
-            color: #fff;
-            font-size: 16px;
-        }
-        .send-btn:hover { background: #6a9fd0; }
-        
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-        }
-    </style>
-</head>
-<body>
-    <div class="app">
-        <!-- سایدبار -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <input type="text" class="search-input" placeholder="جستجو...">
-            </div>
-            <div class="chat-list">
-                <?php foreach ($sidebar_chats as $chat): ?>
-                <a href="<?php echo $chat['url']; ?>" class="chat-item <?php echo ($chat['id'] === $conversation_id) ? 'active' : ''; ?>">
-                    <?php if ($chat['type'] === 'group'): ?>
-                        <div class="avatar">👥</div>
-                    <?php elseif (!empty($chat['photo'])): ?>
-                        <img src="../<?php echo $chat['photo']; ?>" class="avatar">
-                    <?php else: ?>
-                        <div class="avatar"><?php echo isset($chat['name'][0]) ? $chat['name'][0] : '؟'; ?></div>
-                    <?php endif; ?>
-                    <div style="flex:1;min-width:0;">
-                        <div class="chat-name"><?php echo $chat['name']; ?></div>
-                        <div class="chat-preview"><?php echo $chat['last_message'] ?: '...'; ?></div>
-                    </div>
-                    <?php if ($chat['unread_count'] > 0): ?>
-                        <span class="unread-badge"><?php echo $chat['unread_count']; ?></span>
-                    <?php endif; ?>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        
-        <!-- بخش چت -->
-        <div class="chat-area">
-            <div class="chat-header">
-                <a href="index.php" class="back-btn">←</a>
-                <?php if (!empty($other_user['photo'])): ?>
-                    <img src="../<?php echo $other_user['photo']; ?>" style="width:35px;height:35px;border-radius:50%;object-fit:cover;">
-                <?php else: ?>
-                    <div style="width:35px;height:35px;border-radius:50%;background:var(--tg-accent);display:flex;align-items:center;justify-content:center;font-size:14px;"><?php echo isset($other_user['full_name'][0]) ? $other_user['full_name'][0] : '؟'; ?></div>
-                <?php endif; ?>
-                <div>
-                    <div style="font-size:14px;font-weight:700;"><?php echo $other_user['full_name']; ?></div>
-                    <div style="font-size:10px;color:var(--tg-muted);" id="onlineText">...</div>
-                </div>
-            </div>
-            
-            <div class="messages-area" id="messagesArea">
-                <?php foreach ($chat_messages as $msg): 
-                    $is_sent = $msg['sender_id'] === $my_id;
-                    $is_read = count($msg['read_by'] ?? []) > 1;
-                ?>
-                <div class="message <?php echo $is_sent ? 'sent' : 'received'; ?>" data-id="<?php echo $msg['id']; ?>">
-                    <?php if (($msg['type'] ?? 'text') === 'file'): ?>
-                        <?php if (($msg['file_type'] ?? '') === 'image'): ?>
-                            <div class="image-message"><img src="../<?php echo $msg['file_path']; ?>" onclick="window.open(this.src,'_blank')"></div>
-                        <?php else: ?>
-                            <div class="file-message">
-                                <span class="file-icon">📁</span>
-                                <div style="flex:1;">
-                                    <div class="file-name"><?php echo $msg['content']; ?></div>
-                                    <div class="file-size"><?php echo $msg['file_size'] ?? ''; ?> MB</div>
-                                </div>
-                                <a href="../<?php echo $msg['file_path']; ?>" download class="file-link">⬇️</a>
-                            </div>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <?php echo $msg['content']; ?>
-                    <?php endif; ?>
-                    <span class="message-time">
-                        <?php echo date('H:i', strtotime($msg['timestamp'])); ?>
-                        <?php echo $is_sent ? ($is_read ? ' ✓✓' : ' ✓') : ''; ?>
+<body class="chat-open">
+<div class="tg-app" id="tgRoot"
+     data-csrf="<?php echo e(csrf_token()); ?>"
+     data-user="<?php echo e($myUid); ?>"
+     data-chat-type="<?php echo e($type); ?>"
+     data-chat-uid="<?php echo e($uid); ?>"
+     data-chat-key="<?php echo e($chatKey); ?>"
+     data-other="<?php echo e($otherUid); ?>"
+     data-max-mb="<?php echo e((string)Settings::get('msg_max_file_mb', 32)); ?>"
+     data-me='<?php echo json_encode($me, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT); ?>'>
+
+    <?php include __DIR__ . '/sidebar.php'; ?>
+
+    <main class="tg-main">
+        <div class="tg-store-bar" id="tgStoreBar"><span class="dot"></span> در حال آماده‌سازی حافظه دستگاه…</div>
+
+        <!-- هدر -->
+        <header class="tg-head">
+            <a href="index.php" class="icon-btn" title="بازگشت" aria-label="بازگشت">→</a>
+
+            <?php if ($type === 'saved'): ?>
+                <div class="tg-av sm saved">🔖</div>
+            <?php elseif ($type === 'group'): ?>
+                <a href="group-info.php?group=<?php echo e($uid); ?>" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                    <?php echo $headPhoto !== ''
+                        ? '<img src="' . e(m_asset($headPhoto)) . '" class="tg-av sm group" alt="">'
+                        : '<div class="tg-av sm group">👥</div>'; ?>
+                    <span class="tg-head-info">
+                        <span class="tg-head-name"><?php echo e($headName); ?></span>
+                        <span class="tg-head-sub" id="tgHeadSub" data-default="<?php echo e($headSub); ?>"><?php echo e($headSub); ?></span>
                     </span>
-                </div>
-                <?php endforeach; ?>
+                </a>
+            <?php else: ?>
+                <a href="profile.php?user=<?php echo e($otherUid); ?>" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                    <span class="tg-av-wrap">
+                        <?php echo $headPhoto !== ''
+                            ? '<img src="' . e(m_asset($headPhoto)) . '" class="tg-av sm" alt="">'
+                            : '<div class="tg-av sm" style="background:' . e(m_avatar_color($headName)) . '">' . e(mb_substr($headName, 0, 1)) . '</div>'; ?>
+                        <?php if ($headOnline): ?><span class="tg-online-dot"></span><?php endif; ?>
+                    </span>
+                    <span class="tg-head-info">
+                        <span class="tg-head-name"><?php echo e($headName); ?></span>
+                        <span class="tg-head-sub<?php echo $headOnline ? ' on' : ''; ?>" id="tgHeadSub" data-default="<?php echo e($headSub); ?>"><?php echo e($headSub); ?></span>
+                    </span>
+                </a>
+            <?php endif; ?>
+
+            <div class="tg-head-actions">
+                <button type="button" class="icon-btn opt" id="tgSearchBtn" title="جستجو در گفتگو">🔍</button>
+                <button type="button" class="icon-btn" data-menu="tgChatMenu" title="گزینه‌ها">⋮</button>
             </div>
-            
-            <div class="input-area">
-                <input type="file" id="fileInput" style="display:none;" onchange="sendFile()">
-                <button class="file-btn" onclick="document.getElementById('fileInput').click()">📎</button>
-                <input type="text" id="messageInput" class="chat-input" placeholder="پیام..." autocomplete="off">
-                <button class="send-btn" onclick="sendMessage()">➤</button>
+
+            <div class="tg-menu" id="tgChatMenu">
+                <?php if ($type !== 'saved'): ?>
+                    <button type="button" data-cmd="pin_chat">📌 <span id="pinChatLabel">سنجاق کردن گفتگو</span></button>
+                    <button type="button" data-cmd="mute_chat">🔕 <span id="muteChatLabel">بی‌صدا کردن</span></button>
+                    <div class="sep"></div>
+                <?php endif; ?>
+                <button type="button" data-cmd="search">🔍 <span>جستجو در گفتگو</span></button>
+                <button type="button" data-cmd="export">📤 <span>خروجی گرفتن (ذخیره روی دستگاه)</span></button>
+                <div class="sep"></div>
+                <button type="button" data-cmd="clear" class="danger">🧹 <span>پاک کردن تاریخچه از دید من</span></button>
+                <?php if ($type === 'group'): ?>
+                    <div class="sep"></div>
+                    <a href="group-info.php?group=<?php echo e($uid); ?>">ℹ️ <span>اطلاعات گروه</span></a>
+                <?php endif; ?>
             </div>
+        </header>
+
+        <!-- نوار پیام سنجاق‌شده -->
+        <div class="tg-pinbar" id="tgPinBar" style="display:none"></div>
+
+        <!-- پیام‌ها -->
+        <div class="tg-msgs" id="tgMessages">
+            <div class="tg-loading" id="tgLoading"><div class="tg-spinner"></div>در حال بارگذاری گفتگو…</div>
         </div>
-    </div>
-    
-    <script>
-    const conversationId = '<?php echo $conversation_id; ?>';
-    const myId = '<?php echo $my_id; ?>';
-    const otherId = '<?php echo $other_id; ?>';
-    
-    function scrollToBottom() { const a = document.getElementById('messagesArea'); if (a) a.scrollTop = a.scrollHeight; }
-    scrollToBottom();
-    
-    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-    
-    function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const content = input.value.trim();
-        if (!content) return;
-        
-        fetch('api/send.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'type=private&conversation_id=' + conversationId + '&content=' + encodeURIComponent(content)
-        })
-        .then(r => r.json())
-        .then(d => { if (d.success) { input.value = ''; loadMessages(); } });
-    }
-    
-    function sendFile() {
-        const input = document.getElementById('fileInput');
-        const file = input.files[0];
-        if (!file) return;
-        
-        const fd = new FormData();
-        fd.append('type', 'private_file');
-        fd.append('conversation_id', conversationId);
-        fd.append('file', file);
-        
-        fetch('api/send.php', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(d => { if (d.success) { loadMessages(); } input.value = ''; });
-    }
-    
-    document.getElementById('messageInput')?.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
-    
-    function loadMessages() {
-        fetch('api/get.php?type=private&conversation_id=' + conversationId)
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                const area = document.getElementById('messagesArea');
-                data.messages.forEach(msg => {
-                    if (!area.querySelector('[data-id="' + msg.id + '"]')) {
-                        const isSent = msg.sender_id === myId;
-                        const div = document.createElement('div');
-                        div.className = 'message ' + (isSent ? 'sent' : 'received');
-                        div.dataset.id = msg.id;
-                        
-                        let content = '';
-                        if (msg.type === 'file' && msg.file_type === 'image') {
-                            content = '<div class="image-message"><img src="../' + msg.file_path + '"></div>';
-                        } else if (msg.type === 'file') {
-                            content = '<div class="file-message"><span class="file-icon">📁</span><div style="flex:1;"><div class="file-name">' + escapeHtml(msg.content) + '</div><div class="file-size">' + (msg.file_size || '') + ' MB</div></div><a href="../' + msg.file_path + '" download class="file-link">⬇️</a></div>';
-                        } else {
-                            content = escapeHtml(msg.content);
-                        }
-                        
-                        div.innerHTML = content + '<span class="message-time">' + new Date(msg.timestamp).toLocaleTimeString('fa-IR', {hour:'2-digit',minute:'2-digit'}) + '</span>';
-                        area.appendChild(div);
+
+        <button type="button" class="tg-jump" id="tgJump" title="رفتن به پایین">↓</button>
+
+        <!-- ورودی -->
+        <div class="tg-composer">
+            <div class="tg-reply-preview" id="tgReplyPreview">
+                <span style="color:var(--tg-accent);font-size:16px">↩</span>
+                <span class="body"><span class="n"></span><span class="t"></span></span>
+                <button type="button" class="icon-btn" id="tgReplyCancel" aria-label="لغو">✕</button>
+            </div>
+
+            <div class="tg-attach-preview" id="tgAttachPreview">
+                <span class="thumb"></span>
+                <span class="body" style="flex:1;min-width:0">
+                    <span class="name" style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                    <span class="size" style="color:var(--tg-muted)"></span>
+                </span>
+                <button type="button" class="icon-btn" id="tgAttachCancel" aria-label="حذف ضمیمه">✕</button>
+            </div>
+
+            <div id="tgUploadBar" style="display:none;margin-bottom:8px">
+                <div style="height:5px;background:var(--tg-bg);border-radius:3px;overflow:hidden">
+                    <div class="bar" style="height:100%;width:0;background:var(--tg-accent);transition:width .2s"></div>
+                </div>
+            </div>
+
+            <?php if ($canPost): ?>
+            <div class="tg-input-row">
+                <input type="file" id="tgFile" style="display:none">
+                <button type="button" class="icon-btn" id="tgAttach" title="پیوست فایل" aria-label="پیوست فایل">📎</button>
+                <textarea id="tgInput" class="tg-input" rows="1" placeholder="پیام خود را بنویسید…" autocomplete="off"></textarea>
+                <button type="button" class="tg-send" id="tgSend" title="ارسال" aria-label="ارسال">➤</button>
+            </div>
+            <?php else: ?>
+            <div class="tg-composer-hint" style="display:block">
+                🔒 فقط مدیران این گروه می‌توانند پیام ارسال کنند.
+            </div>
+            <?php endif; ?>
+        </div>
+    </main>
+</div>
+
+<?php m_foot(); ?>
+<script src="assets/chat.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    const root = document.getElementById('tgRoot');
+
+    TG.boot({}).then(function () {
+        try { TG.me = JSON.parse(root.dataset.me || 'null'); } catch (e) {}
+
+        // نام کاربران برای نمایش «در حال نوشتن»
+        if (window.__NAMES && root.dataset.other) {
+            // نام طرف مقابل از هدر
+            const nm = document.querySelector('.tg-head-name');
+            if (nm) window.__NAMES[root.dataset.other] = nm.textContent.trim();
+            window.__names = window.__NAMES;
+        }
+
+        return Chat.init({
+            type: root.dataset.chatType,
+            uid: root.dataset.chatUid,
+            chat_key: root.dataset.chatKey,
+            other_uid: root.dataset.other
+        });
+    }).then(function () {
+        // وضعیت اولیه سنجاق / بی‌صدا
+        const st = Chat.state || {};
+        const pinLabel = document.getElementById('pinChatLabel');
+        const muteLabel = document.getElementById('muteChatLabel');
+        if (pinLabel) pinLabel.textContent = st.pinned ? 'برداشتن سنجاق گفتگو' : 'سنجاق کردن گفتگو';
+        if (muteLabel) muteLabel.textContent = st.muted ? 'باصدا کردن' : 'بی‌صدا کردن';
+
+        // به‌روزرسانی وضعیت آنلاین طرف مقابل
+        if (root.dataset.other) {
+            setInterval(function () {
+                if (document.hidden) return;
+                TG.get('ping').then(function (res) {
+                    const on = (res.online || []).indexOf(root.dataset.other) >= 0;
+                    const sub = document.getElementById('tgHeadSub');
+                    if (!sub || (document.querySelector('.tg-head-sub.on') && sub.classList.contains('on') && sub.textContent.indexOf('نوشتن') >= 0)) return;
+                    sub.textContent = on ? 'آنلاین' : (sub.dataset.default || '');
+                    sub.classList.toggle('on', on);
+                    const dot = document.querySelector('.tg-head .tg-online-dot');
+                    if (on && !dot) {
+                        const wrap = document.querySelector('.tg-head .tg-av-wrap');
+                        if (wrap) wrap.insertAdjacentHTML('beforeend', '<span class="tg-online-dot"></span>');
+                    } else if (!on && dot) {
+                        dot.remove();
                     }
-                });
-                scrollToBottom();
+                }).catch(function () {});
+            }, 10000);
+        }
+    }).catch(function (e) {
+        TG.toast('⚠️ ' + e.message);
+    });
+
+    // ---- منوی گفتگو ----
+    const menuBtn = document.querySelector('[data-menu="tgChatMenu"]');
+    if (menuBtn) {
+        menuBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('tgChatMenu').classList.toggle('on');
+        });
+    }
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.tg-menu') && !e.target.closest('[data-menu]')) {
+            document.querySelectorAll('.tg-menu.on').forEach(function (m) { m.classList.remove('on'); });
+        }
+    });
+
+    document.querySelectorAll('[data-cmd]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.tg-menu.on').forEach(function (m) { m.classList.remove('on'); });
+            const cmd = btn.dataset.cmd;
+
+            if (cmd === 'search') { Chat.openSearch(); return; }
+
+            if (cmd === 'pin_chat') {
+                const next = !(Chat.state && Chat.state.pinned);
+                TG.api('chat_state', { chat_key: root.dataset.chatKey, pinned: next ? '1' : '0' }).then(function () {
+                    Chat.state.pinned = next;
+                    document.getElementById('pinChatLabel').textContent = next ? 'برداشتن سنجاق گفتگو' : 'سنجاق کردن گفتگو';
+                    TG.toast(next ? '📌 گفتگو سنجاق شد' : 'سنجاق برداشته شد');
+                }).catch(function (e) { TG.toast('⚠️ ' + e.message); });
+                return;
+            }
+
+            if (cmd === 'mute_chat') {
+                const next = !(Chat.state && Chat.state.muted);
+                TG.api('chat_state', { chat_key: root.dataset.chatKey, muted: next ? '1' : '0' }).then(function () {
+                    Chat.state.muted = next;
+                    document.getElementById('muteChatLabel').textContent = next ? 'باصدا کردن' : 'بی‌صدا کردن';
+                    TG.toast(next ? '🔕 گفتگو بی‌صدا شد' : '🔊 گفتگو باصدا شد');
+                }).catch(function (e) { TG.toast('⚠️ ' + e.message); });
+                return;
+            }
+
+            if (cmd === 'clear') {
+                TG.confirm('پاک کردن تاریخچه',
+                    'تاریخچه این گفتگو فقط از دید شما و از حافظه این دستگاه پاک می‌شود. ادامه می‌دهید؟',
+                    function () {
+                        LocalStore.clearChat(root.dataset.chatKey).then(function () {
+                            return TG.api('clear_history', { chat_key: root.dataset.chatKey });
+                        }).then(function () {
+                            TG.toast('🧹 تاریخچه پاک شد');
+                            setTimeout(function () { location.reload(); }, 900);
+                        }).catch(function (e) { TG.toast('⚠️ ' + e.message); });
+                    }, 'پاک کن', true);
+                return;
+            }
+
+            if (cmd === 'export') {
+                exportChat();
+                return;
             }
         });
-    }
-    
-    setInterval(loadMessages, 2000);
-    
-    // آنلاین
-    fetch('api/status.php?action=heartbeat');
-    setInterval(() => fetch('api/status.php?action=heartbeat'), 30000);
-    setInterval(() => {
-        fetch('api/status.php?action=get&user_id=' + otherId)
-        .then(r => r.json())
-        .then(d => {
-            document.getElementById('onlineText').textContent = d.is_online ? 'آنلاین' : 'آفلاین';
+    });
+
+    /** خروجی JSON/متن از تاریخچه — مستقیم روی دستگاه کاربر ذخیره می‌شود */
+    function exportChat() {
+        LocalStore.loadMessages(root.dataset.chatKey, 100000).then(function (list) {
+            if (!list.length) { TG.toast('چیزی برای خروجی گرفتن نیست'); return; }
+            const name = (document.querySelector('.tg-head-name') || {}).textContent || 'chat';
+            let text = 'گفتگو: ' + name + '\n';
+            text += 'خروجی گرفته‌شده در: ' + new Date().toLocaleString('fa-IR') + '\n';
+            text += 'تعداد پیام: ' + list.length + '\n' + '─'.repeat(50) + '\n\n';
+            list.forEach(function (m) {
+                if (m.type === 'system') { text += '— ' + (m.content || '') + '\n'; return; }
+                text += '[' + (m.created_at || '') + '] ' + (m.sender_name || '') + ': '
+                      + (m.content || (m.type === 'image' ? '📷 تصویر' : m.type === 'file' ? '📎 ' + (m.file_name || 'فایل') : m.type))
+                      + '\n';
+            });
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'odsco-chat-' + name.replace(/[^\p{L}\p{N}]+/gu, '-') + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+            TG.toast('✅ خروجی روی دستگاه شما ذخیره شد');
         });
-    }, 5000);
-    </script>
+    }
+})();
+</script>
 </body>
 </html>

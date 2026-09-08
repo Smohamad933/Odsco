@@ -1,21 +1,21 @@
 <?php
-require_once 'config.php';
+declare(strict_types=1);
+require_once __DIR__ . '/config.php';
 
-// حذف از لیست آنلاین
-if (isset($_SESSION['messenger_user_id'])) {
-    $online = read_json('messenger_online.json');
-    if (is_array($online)) {
-        unset($online[$_SESSION['messenger_user_id']]);
-        write_json('messenger_online.json', $online);
-    }
+$uid = current_messenger_uid();
+if ($uid !== '') {
+    // خروج از دستگاه فعلی از لیست نشست‌ها
+    $devices = Messenger::devices($uid);
+    if ($devices) Messenger::revokeDevice($uid, (string)$devices[0]['uid']);
+    ActivityLog::add('messenger_logout', 'خروج از پیام‌رسان');
 }
 
-// پاک کردن سشن
-unset($_SESSION['messenger_user_id']);
-unset($_SESSION['messenger_user_name']);
-unset($_SESSION['messenger_user_photo']);
-unset($_SESSION['messenger_user_role']);
-
-header('Location: login.php');
-exit;
-?>
+$_SESSION = [];
+if (session_status() === PHP_SESSION_ACTIVE) {
+    if (ini_get('session.use_cookies')) {
+        $p = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+    }
+    session_destroy();
+}
+redirect('login.php');

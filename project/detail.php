@@ -52,9 +52,10 @@ $instagramHashtags = "#معماری #طراحی_داخلی #" . str_replace(' ',
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $project['title']; ?> | <?php echo $settings['site_name']; ?></title>
     <link rel="stylesheet" href="../style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <!-- کتابخانه‌ها به‌صورت محلی هستند تا سایت بدون اینترنت/CDN هم کار کند -->
+    <script src="../assets/vendor/jszip.min.js"></script>
+    <script src="../assets/vendor/FileSaver.min.js"></script>
+    <script src="../assets/vendor/qrcode.js"></script>
     <style>
         /* ============ فونت اجباری برای محتوای ادیتور ============ */
         .project-description,

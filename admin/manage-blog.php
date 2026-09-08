@@ -289,7 +289,7 @@ $blog_categories = ['عمومی', 'معماری', 'عمران', 'تأسیسات'
                         </div>
                     </div>
                     <div class="post-footer">
-                        <span style="font-size:10px;color:#999;"><?php echo $post['tags'] ?? ''; ?></span>
+                        <span style="font-size:10px;color:#999;"><?php echo e(is_array($post['tags'] ?? null) ? implode('، ', $post['tags']) : (string)($post['tags'] ?? '')); ?></span>
                         <div class="post-actions">
                             <a href="../blog/post.php?slug=<?php echo $post['slug']; ?>" target="_blank" class="btn-icon">👁️</a>
                             <a href="manage-blog.php?edit=<?php echo $post['id']; ?>" class="btn-icon"><?php echo $is_viewer ? '👁️' : '✏️'; ?></a>

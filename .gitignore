@@ -1,0 +1,20 @@
+# --- تنظیمات محلی دیتابیس (توسط installer ساخته می‌شود؛ شامل رمز است) ---
+includes/config.local.php
+install/installed.lock
+
+# --- فایل‌های بارگذاری‌شده توسط کاربران ---
+uploads/*
+!uploads/.gitkeep
+
+# --- ابزار توسعه ---
+node_modules/
+/tools/package.json
+/tools/package-lock.json
+# فایل‌های نشست و عکس‌های تست (تولید خودکار)
+/tools/.sessions/
+/tools/shots/
+
+# --- سیستم‌عامل / ویرایشگر ---
+.DS_Store
+Thumbs.db
+*.log
