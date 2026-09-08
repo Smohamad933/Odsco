@@ -75,7 +75,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // سئو
         $settings['meta_keywords'] = sanitize($_POST['meta_keywords'] ?? '');
         $settings['meta_description'] = sanitize($_POST['meta_description'] ?? '');
-        
+
+        // پیام‌رسان / حضور و غیاب / زمان‌بندی
+        if (isset($_POST['section']) && $_POST['section'] === 'ops') {
+            $settings['msg_retention_days'] = (int)($_POST['msg_retention_days'] ?? 0);
+            $settings['msg_max_file_mb']    = (int)($_POST['msg_max_file_mb'] ?? 32);
+            $settings['msg_allow_client']   = isset($_POST['msg_allow_client']) ? 1 : 0;
+            $settings['msg_purge_on_read']  = isset($_POST['msg_purge_on_read']) ? 1 : 0;
+            $settings['messenger_enabled']  = isset($_POST['messenger_enabled']) ? 1 : 0;
+
+            $settings['att_work_start']   = sanitize($_POST['att_work_start'] ?? '08:00');
+            $settings['att_work_end']     = sanitize($_POST['att_work_end'] ?? '16:00');
+            $settings['att_late_minutes'] = (int)($_POST['att_late_minutes'] ?? 15);
+            $settings['att_qr_minutes']   = (int)($_POST['att_qr_minutes'] ?? 30);
+            $settings['att_weekends']     = sanitize($_POST['att_weekends'] ?? '6');
+
+            if (($settings['cron_key'] ?? '') === '' || !empty($_POST['rotate_cron_key'])) {
+                $settings['cron_key'] = bin2hex(random_bytes(16));
+            }
+        }
+
         write_json('settings.json', $settings);
         add_log('update_settings', 'تنظیمات سایت بروزرسانی شد');
         $message = '✅ تنظیمات ذخیره شد';
@@ -261,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($is_viewer): ?><div class="viewer-banner">⛔ شما فقط بیننده هستید!</div><?php endif; ?>
             
             <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="section" value="ops">
                 <!-- تب‌ها -->
                 <div class="settings-tabs">
                     <button type="button" class="tab-btn active" onclick="showTab('general')">🏢 اطلاعات کلی</button>
@@ -432,6 +452,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <?php if (!$is_viewer): ?>
+                <!-- ============ پیام‌رسان ============ -->
+                <div class="form-section" style="margin-top:28px">
+                    <div class="form-section__title">💬 پیام‌رسان داخلی</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>نگهداری تاریخچه روی سرور (روز) — ۰ یعنی نامحدود</label>
+                            <input type="number" name="msg_retention_days" min="0" max="3650"
+                                   value="<?php echo (int)($settings['msg_retention_days'] ?? 0); ?>">
+                            <small style="font-size:11px;color:#888">پیام‌ها روی گوشی/کامپیوتر کاربر می‌مانند؛ این فقط پاک‌سازی سمت سرور است.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>حداکثر حجم فایل پیوست (مگابایت)</label>
+                            <input type="number" name="msg_max_file_mb" min="1" max="512"
+                                   value="<?php echo (int)($settings['msg_max_file_mb'] ?? 32); ?>">
+                        </div>
+                        <div class="form-group full">
+                            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+                                <input type="checkbox" name="messenger_enabled" value="1"
+                                       <?php echo !isset($settings['messenger_enabled']) || $settings['messenger_enabled'] ? 'checked' : ''; ?>>
+                                پیام‌رسان فعال باشد
+                            </label>
+                            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+                                <input type="checkbox" name="msg_allow_client" value="1"
+                                       <?php echo !empty($settings['msg_allow_client']) ? 'checked' : ''; ?>>
+                                کاربران نقش «کارفرما» هم بتوانند وارد پیام‌رسان شوند
+                            </label>
+                            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+                                <input type="checkbox" name="msg_purge_on_read" value="1"
+                                       <?php echo !empty($settings['msg_purge_on_read']) ? 'checked' : ''; ?>>
+                                پیام‌های خصوصی خوانده‌شده زودتر از سرور پاک شوند
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ حضور و غیاب ============ -->
+                <div class="form-section" style="margin-top:28px">
+                    <div class="form-section__title">🕐 حضور و غیاب</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>ساعت شروع کار</label>
+                            <input type="time" name="att_work_start"
+                                   value="<?php echo e((string)($settings['att_work_start'] ?? '08:00')); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>ساعت پایان کار</label>
+                            <input type="time" name="att_work_end"
+                                   value="<?php echo e((string)($settings['att_work_end'] ?? '16:00')); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>آستانه تاخیر (دقیقه)</label>
+                            <input type="number" name="att_late_minutes" min="0" max="240"
+                                   value="<?php echo (int)($settings['att_late_minutes'] ?? 15); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>اعتبار QR (دقیقه)</label>
+                            <input type="number" name="att_qr_minutes" min="1" max="720"
+                                   value="<?php echo (int)($settings['att_qr_minutes'] ?? 30); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>روزهای تعطیل هفتگی (۰=یکشنبه … ۶=جمعه، با کاما)</label>
+                            <input type="text" name="att_weekends"
+                                   value="<?php echo e((string)($settings['att_weekends'] ?? '6')); ?>"
+                                   placeholder="6 یا 5,6">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ زمان‌بندی ============ -->
+                <div class="form-section" style="margin-top:28px">
+                    <div class="form-section__title">⏱ زمان‌بندی (Cron)</div>
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label>کلید امن اجرای زمان‌بندی</label>
+                            <input type="text" readonly value="<?php echo e((string)($settings['cron_key'] ?? '')); ?>"
+                                   style="direction:ltr;text-align:left">
+                            <small style="font-size:11px;color:#888">
+                                آدرس اجرای خودکار (روزی یک‌بار در کنترل‌پنل هاست تنظیم کنید):<br>
+                                <code style="direction:ltr;display:inline-block;font-size:10.5px;word-break:break-all">
+                                    <?php
+                                    $host = isset($_SERVER['HTTP_HOST']) ? (($_SERVER['HTTPS'] ?? '') === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : '';
+                                    $base = $host . rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/admin/settings.php'), 2)), '/');
+                                    echo e($base . '/tools/cron.php?key=' . (string)($settings['cron_key'] ?? ''));
+                                    ?>
+                                </code>
+                            </small>
+                        </div>
+                        <div class="form-group full">
+                            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+                                <input type="checkbox" name="rotate_cron_key" value="1">
+                                ساخت کلید جدید (کلید فعلی باطل می‌شود)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-save">💾 ذخیره همه تنظیمات</button>
                 <?php endif; ?>
             </form>

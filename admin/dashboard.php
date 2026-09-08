@@ -1,7 +1,10 @@
 <?php
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
-require_once '../includes/logger.php';
+require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
+require_once dirname(__DIR__) . '/includes/logger.php';
+require_once dirname(__DIR__) . '/includes/attendance.php';
+require_once dirname(__DIR__) . '/includes/automation.php';
 
 check_login();
 
@@ -80,9 +83,22 @@ $role_icon = $role_icons[$user_role] ?? '👤';
 // لاگ‌های اخیر
 $recent_logs = get_logs(8);
 
+// ============ آمار عملیاتی (پروژه / حضور و غیاب / اتوماسیون) ============
+$ops = Db::ready();
+$att_summary   = $ops ? Attendance::todaySummary() : null;
+$att_pending   = $ops ? count(Attendance::requests('pending')) : 0;
+$rules_active  = $ops ? count(Automation::rules()) : 0;
+$overdue_tasks = $ops ? Tasks::overdue() : [];
+$due_soon      = $ops ? Tasks::dueSoon(3) : [];
+$all_projects  = $ops ? Projects::list() : [];
+$avg_progress  = $all_projects
+    ? (int)round(array_sum(array_map(fn($p) => (int)$p['progress'], $all_projects)) / count($all_projects))
+    : 0;
+$recent_updates = $ops ? ProjectUpdates::recent(6) : [];
+
 // تاریخ امروز
 $today_date = date('Y/m/d');
-$today_fa = format_date(date('Y-m-d'));
+$today_fa = jalali_date_long();
 ?>
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -449,29 +465,114 @@ $today_fa = format_date(date('Y-m-d'));
             <div class="stats-grid">
                 <div class="stat-box blue">
                     <div class="stat-icon blue">👁️</div>
-                    <span class="stat-number"><?php echo number_format($total_views); ?></span>
+                    <span class="stat-number"><?php echo fa_number($total_views); ?></span>
                     <span class="stat-label">کل بازدید سایت</span>
                 </div>
                 
                 <div class="stat-box green">
                     <div class="stat-icon green">📅</div>
-                    <span class="stat-number"><?php echo number_format($today_views); ?></span>
+                    <span class="stat-number"><?php echo fa_number($today_views); ?></span>
                     <span class="stat-label">بازدید امروز</span>
                 </div>
                 
                 <div class="stat-box orange">
                     <div class="stat-icon orange">🏗️</div>
-                    <span class="stat-number"><?php echo $total_projects; ?></span>
+                    <span class="stat-number"><?php echo fa_number($total_projects); ?></span>
                     <span class="stat-label">پروژه‌ها</span>
                 </div>
                 
                 <div class="stat-box red">
                     <div class="stat-icon red">📨</div>
-                    <span class="stat-number"><?php echo $unread_messages; ?></span>
+                    <span class="stat-number"><?php echo fa_number($unread_messages); ?></span>
                     <span class="stat-label">پیام‌های جدید</span>
                 </div>
             </div>
             
+            <?php if ($ops): ?>
+            <!-- پنل عملیاتی -->
+            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+                <div class="stat-box green">
+                    <div class="stat-icon green">🟢</div>
+                    <span class="stat-number"><?php echo fa_number((int)($att_summary['present'] ?? 0)); ?></span>
+                    <span class="stat-label">حاضر امروز (از <?php echo fa_number((int)($att_summary['staff'] ?? 0)); ?>)</span>
+                </div>
+                <div class="stat-box orange">
+                    <div class="stat-icon orange">🕐</div>
+                    <span class="stat-number"><?php echo fa_number($att_pending); ?></span>
+                    <span class="stat-label">درخواست حضور در انتظار</span>
+                </div>
+                <div class="stat-box red">
+                    <div class="stat-icon red">⏰</div>
+                    <span class="stat-number"><?php echo fa_number(count($overdue_tasks)); ?></span>
+                    <span class="stat-label">تسک عقب‌افتاده</span>
+                </div>
+                <div class="stat-box blue">
+                    <div class="stat-icon blue">📈</div>
+                    <span class="stat-number"><?php echo fa_number($avg_progress); ?>٪</span>
+                    <span class="stat-label">میانگین پیشرفت پروژه‌ها</span>
+                </div>
+            </div>
+
+            <div class="dashboard-bottom" style="margin-bottom:25px">
+                <!-- آخرین گزارش‌های پیشرفت -->
+                <div class="card">
+                    <h2>📊 آخرین گزارش‌های پروژه</h2>
+                    <?php if (!$recent_updates): ?>
+                        <p style="text-align:center;color:#999;padding:20px">گزارشی ثبت نشده است</p>
+                    <?php else: ?>
+                        <?php foreach ($recent_updates as $u): ?>
+                        <div class="log-item">
+                            <span class="log-dot <?php echo $u['level'] === 'danger' ? 'delete' : ($u['level'] === 'success' ? 'add' : 'edit'); ?>"></span>
+                            <span class="log-text">
+                                <a href="workspace.php?project=<?php echo e($u['project_uid']); ?>" style="text-decoration:none;color:inherit">
+                                    <?php echo e(ProjectUpdates::levelIcon((string)$u['level']) . ' ' . $u['title']); ?>
+                                </a>
+                                <small style="color:#999"> — <?php echo e($u['project_title']); ?></small>
+                            </span>
+                            <span class="log-time"><?php echo e(time_ago_fa((string)$u['created_at'])); ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
+                <!-- هشدارهای عملیاتی -->
+                <div class="card">
+                    <h2>⚠️ نیاز به اقدام</h2>
+                    <?php
+                    $alerts = [];
+                    if ($att_pending > 0)     $alerts[] = ['🕐', fa_number($att_pending) . ' درخواست حضور و غیاب در انتظار بررسی', 'attendance.php?tab=requests', 'orange'];
+                    if (count($overdue_tasks)) $alerts[] = ['⏰', fa_number(count($overdue_tasks)) . ' تسک از سررسید گذشته است', 'workspace.php', 'red'];
+                    if (count($due_soon))      $alerts[] = ['📆', fa_number(count($due_soon)) . ' تسک تا ۳ روز دیگر سررسید دارد', 'workspace.php', 'orange'];
+                    foreach ($all_projects as $p) {
+                        if (!empty($p['end_date']) && strtotime((string)$p['end_date']) < time() && (int)$p['progress'] < 100) {
+                            $alerts[] = ['🚨', 'پروژه «' . $p['title'] . '» از مهلت گذشته است', 'workspace.php?project=' . $p['uid'], 'red'];
+                        }
+                    }
+                    if (!$rules_active) $alerts[] = ['⚙️', 'هیچ قانون اتوماسیونی فعال نیست', 'automation.php', 'orange'];
+                    ?>
+                    <?php if (!$alerts): ?>
+                        <p style="text-align:center;color:#2ed573;padding:20px">✅ همه‌چیز تحت کنترل است</p>
+                    <?php else: ?>
+                        <?php foreach (array_slice($alerts, 0, 8) as [$ico, $txt, $href, $tone]): ?>
+                        <div class="log-item">
+                            <span class="log-dot <?php echo $tone === 'red' ? 'delete' : 'edit'; ?>"></span>
+                            <span class="log-text"><a href="<?php echo e($href); ?>" style="text-decoration:none;color:inherit"><?php echo e($ico . ' ' . $txt); ?></a></span>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:25px">
+                <a href="workspace.php" class="btn" style="background:#667eea;color:#fff;text-decoration:none;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700">🏗️ میز کار پروژه‌ها</a>
+                <a href="attendance.php" class="btn" style="background:#11998e;color:#fff;text-decoration:none;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700">🕐 حضور و غیاب</a>
+                <a href="automation.php" class="btn" style="background:#f7971e;color:#fff;text-decoration:none;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700">⚙️ اتوماسیون</a>
+                <a href="broadcast.php" class="btn" style="background:#eb3349;color:#fff;text-decoration:none;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700">📣 ارسال اطلاعیه</a>
+                <a href="../messenger/index.php" target="_blank" class="btn" style="background:#3742fa;color:#fff;text-decoration:none;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700">💬 پیام‌رسان</a>
+                <a href="../client/index.php" target="_blank" class="btn" style="background:#555;color:#fff;text-decoration:none;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700">🏢 پنل کارفرما</a>
+            </div>
+            <?php endif; ?>
+
             <!-- بخش پایین -->
             <div class="dashboard-bottom">
                 <!-- پربازدیدترین‌ها -->
@@ -525,8 +626,8 @@ $today_fa = format_date(date('Y-m-d'));
                         ?>
                         <div class="log-item">
                             <span class="log-dot <?php echo $dot_class; ?>"></span>
-                            <span class="log-text"><?php echo $log['details'] ?? $log['action']; ?></span>
-                            <span class="log-time"><?php echo $log['timestamp']; ?></span>
+                            <span class="log-text"><?php echo e($log['details'] ?? $log['action']); ?></span>
+                            <span class="log-time"><?php echo e(time_ago_fa((string)($log['timestamp'] ?? $log['created_at'] ?? null))); ?></span>
                         </div>
                         <?php endforeach; ?>
                     <?php else: ?>

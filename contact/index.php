@@ -2,6 +2,7 @@
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/logger.php';
+require_once '../includes/automation.php';
 
 $settings = get_settings();
 $message_sent = false;
@@ -46,24 +47,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if (empty($error)) {
-            $messages = read_json('messages.json');
-            
-            $new_message = [
-                'id' => 'msg_' . uniqid(),
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'subject' => $subject,
-                'message' => $message,
-                'attachment' => $attachment,
-                'date' => date('Y-m-d H:i:s'),
-                'is_read' => false,
-                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-            ];
-            
-            $messages[] = $new_message;
-            write_json('messages.json', $messages);
+            if (Db::ready()) {
+                // مسیر دیتابیس (MySQL)
+                ContactMessages::create([
+                    'name'       => (string)$name,
+                    'email'      => (string)$email,
+                    'phone'      => (string)$phone,
+                    'subject'    => (string)$subject,
+                    'body'       => (string)$message,
+                    'attachment' => $attachment,
+                ]);
+            } else {
+                // مسیر سازگار با فایل JSON (وقتی دیتابیس نصب نشده)
+                $messages = read_json('messages.json');
+                $messages[] = [
+                    'id' => 'msg_' . uniqid(),
+                    'name' => $name,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'subject' => $subject,
+                    'message' => $message,
+                    'attachment' => $attachment,
+                    'date' => date('Y-m-d H:i:s'),
+                    'is_read' => false,
+                    'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+                ];
+                write_json('messages.json', $messages);
+            }
+
             add_log('new_message', "پیام جدید از {$name}");
+
+            // راه‌اندازی قواعد خودکارسازی (اعلان به مدیران)
+            try {
+                Automation::fire('client.message', [
+                    'event'   => 'client.message',
+                    'name'    => (string)$name,
+                    'email'   => (string)$email,
+                    'subject' => (string)$subject,
+                ]);
+            } catch (Throwable $e) {
+                // خودکارسازی نباید ارسال پیام را خراب کند
+            }
+
             $message_sent = true;
         }
     }
