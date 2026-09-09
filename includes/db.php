@@ -169,6 +169,14 @@ final class Db
     /** نام جدول با پیشوند */
     public function t(string $table): string
     {
+        if ($this->prefix === '') return $table;
+
+        // این تابع باید idempotent باشد. متدهای insert/update/delete همین کلاس
+        // هم t() را روی نام جدول صدا می‌زنند و ۳۲۲ جای کد هم از قبل t() زده‌اند؛
+        // بدون این محافظ، هر پیشوند غیرخالی نام را دوبرابر می‌کرد
+        // (odsco_odsco_users) و کل سایت با «no such table» از کار می‌افتاد.
+        if (str_starts_with($table, $this->prefix)) return $table;
+
         return $this->prefix . $table;
     }
 

@@ -36,7 +36,6 @@ $contacts = Messenger::contacts($myUid);
 $memberUids = array_column($group['members'], 'uid');
 $nonMembers = array_values(array_filter($contacts, fn($u) => !in_array($u['uid'], $memberUids, true)));
 
-include __DIR__ . '/sidebar.php';
 m_head($group['name'] . ' · گروه');
 ?>
 <body>

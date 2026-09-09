@@ -333,6 +333,63 @@ async function login(client, path, user, pass) {
     }
   }
 
+  // ------------------------------------------------------- رگرسیون‌های مهم
+  section('رگرسیون: ساختار سند HTML');
+  {
+    // یک include اضافی پیش از m_head() باعث می‌شد سایدبار دوبار چاپ شود و
+    // کپی اول قبل از <!DOCTYPE> بنشیند → مرورگر به حالت quirks می‌رفت.
+    // profile و group-info بدون پارامتر ریدایرکت می‌دهند، پس با پارامتر معتبر
+    const profRes = await msg.get('/messenger/index.php');
+    const uidM = /data-user="([^"]+)"/.exec(profRes.body);
+    const pages = ['/messenger/index.php', '/messenger/groups.php', '/messenger/notices.php',
+                   '/messenger/settings.php', '/messenger/attendance.php', '/messenger/chat.php?saved=1'];
+    if (uidM) pages.push('/messenger/profile.php?user=' + encodeURIComponent(uidM[1]));
+    const grpM = /group-chat\.php\?group=([A-Za-z0-9_.-]+)/.exec((await msg.get('/messenger/groups.php')).body);
+    if (grpM) pages.push('/messenger/group-info.php?group=' + encodeURIComponent(grpM[1]));
+    for (const p of pages) {
+      const r = await msg.get(p);
+      const dt = (r.body.match(/<!DOCTYPE/gi) || []).length;
+      const as = (r.body.match(/<aside/g) || []).length;
+      const i = r.body.search(/<!DOCTYPE/i);
+      const a = r.body.search(/<aside/);
+      check(p + ' — یک doctype و یک سایدبار، سایدبار بعد از doctype',
+        dt === 1 && as === 1 && (a < 0 || i < 0 || i < a),
+        'doctype=' + dt + ' aside=' + as + ' (aside@' + a + ' doctype@' + i + ')');
+    }
+  }
+
+  section('رگرسیون: ارتفاع صفحه در موبایل');
+  {
+    // height: 100dvh باید بعد از height: 100vh بیاید تا در کاسکید برنده شود؛
+    // برعکسش باعث می‌شد کادر تایپ در گوشی زیر ناحیهٔ دید برود.
+    const r = await new Client('pub').get('/messenger/assets/messenger.css');
+    const app = /\.tg-app\s*\{([^}]*)\}/.exec(r.body);
+    const hs = app ? app[1].split(';').map((x) => x.trim()).filter((x) => /^height:/.test(x)) : [];
+    check('.tg-app با 100dvh پایان می‌یابد (کادر تایپ در گوشی دیده می‌شود)',
+      hs.length > 0 && hs[hs.length - 1].includes('dvh'), hs.join(' → '));
+    const lg = /\.tg-login\s*\{([^}]*)\}/.exec(r.body);
+    const mh = lg ? lg[1].split(';').map((x) => x.trim()).filter((x) => /^min-height:/.test(x)) : [];
+    check('.tg-login با 100dvh پایان می‌یابد', mh.length > 0 && mh[mh.length - 1].includes('dvh'), mh.join(' → '));
+  }
+
+  section('رگرسیون: دسترسی به پورتال کارفرما');
+  {
+    // مدیران (مثل mohusyn / Seyed2dot) باید بتوانند وارد پورتال کارفرما شوند
+    // و همهٔ پروژه‌ها را ببینند؛ کارفرما فقط پروژهٔ خودش؛ کارمند هیچ‌کدام.
+    for (const [user, shouldEnter] of [['qa_admin', true], ['qa_manager', true], ['qa_client', true], ['qa_emp', false]]) {
+      const c = new Client('cl_' + user);
+      const l = await login(c, '/client/login.php', user, 'QaPass1234');
+      const entered = [301, 302, 303].includes(l.res.status);
+      check('ورود ' + user + ' به پورتال کارفرما' + (shouldEnter ? ' ممکن است' : ' رد می‌شود'),
+        entered === shouldEnter, 'status=' + l.res.status);
+      if (entered) {
+        const pg = await c.get('/client/index.php');
+        check('  صفحهٔ ' + user + ' بدون خطا رندر می‌شود', pg.status === 200 && !pg.fatal,
+          'status=' + pg.status + (pg.fatal ? ' FATAL: ' + pg.fatal.slice(0, 80) : ''));
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- خلاصه
   console.log('\n' + '═'.repeat(60));
   console.log('نتیجه HTTP: ' + pass + ' موفق / ' + fail + ' ناموفق');

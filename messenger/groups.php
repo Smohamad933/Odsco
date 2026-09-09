@@ -30,7 +30,6 @@ foreach (Messenger::myGroups($myUid) as $gUid) {
 
 $contacts = Messenger::contacts($myUid);
 
-include __DIR__ . '/sidebar.php';
 m_head('گروه‌ها · پیام‌رسان');
 ?>
 <body>

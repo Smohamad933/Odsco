@@ -19,7 +19,6 @@ $activeChatKey = '';
 $notices = Notifications::forUser($myUid, false, 100);
 $unread  = Notifications::unreadCount($myUid);
 
-include __DIR__ . '/sidebar.php';
 m_head('اعلان‌ها · پیام‌رسان');
 ?>
 <body>

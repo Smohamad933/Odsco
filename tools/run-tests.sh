@@ -95,6 +95,12 @@ echo "$API_OUT" | tail -3
 echo "$API_OUT" | grep -q "✅" || RESULT=1
 echo
 
+echo "═══ ۴ب) پیشوند جدول‌ها ═══"
+PREFIX_OUT="$($PHP tools/prefix-test.php 2>&1)"
+echo "$PREFIX_OUT" | grep -E "^  ❌|نتیجه پیشوند" | tail -6
+echo "$PREFIX_OUT" | grep -qE "نتیجه پیشوند: [0-9]+ موفق / 0 ناموفق" || RESULT=1
+echo
+
 echo "═══ ۵) رندر واقعی صفحه‌ها ═══"
 RENDER_OUT="$(bash tools/render-test.sh 2>&1)"
 echo "$RENDER_OUT" | grep -E "^  (✅|❌)|نتیجه رندر" | tail -8

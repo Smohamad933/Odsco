@@ -22,7 +22,6 @@ $retentionDays = (int)Settings::get('msg_retention_days', 0);
 $purgeOnRead   = (bool)Settings::get('msg_purge_on_read');
 $maxUploadMb   = (int)Settings::get('msg_max_file_mb', 32);
 
-include __DIR__ . '/sidebar.php';
 m_head('تنظیمات · پیام‌رسان');
 ?>
 <body>

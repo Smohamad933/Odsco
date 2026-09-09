@@ -17,17 +17,15 @@ c_check_login();
 $me        = c_current_user();
 $clientUid = c_client_uid();
 
-$projects = $clientUid !== ''
-    ? Projects::list(['client_uid' => $clientUid, 'client_visible' => true])
-    : [];
+$projects = c_projects();
 
 $uid     = (string)($_GET['project'] ?? '');
 $project = null;
 
 if ($uid !== '') {
     $p = Projects::find($uid);
-    // فقط پروژه‌های همین شرکت که برای کارفرما قابل نمایش هستند
-    if ($p && (string)$p['client_uid'] === $clientUid && $p['client_visible']) {
+    // کارفرما فقط پروژهٔ خودش؛ مدیر هر پروژهٔ قابل‌نمایشی
+    if (c_can_view_project($p)) {
         $project = $p;
     }
 }

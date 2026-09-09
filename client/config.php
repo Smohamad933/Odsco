@@ -31,10 +31,42 @@ function c_current_user(): array
     return $u;
 }
 
-/** شناسه شرکت کارفرمای فعلی */
+/** شناسه شرکت کارفرمای فعلی (برای مدیران خالی است — یعنی «همه») */
 function c_client_uid(): string
 {
     return (string)(c_current_user()['client_uid'] ?? '');
+}
+
+/**
+ * آیا کاربرِ فعلی مدیر/ادمین است (نه خودِ کارفرما)؟
+ * مدیران هم به پورتال کارفرما دسترسی دارند تا بتوانند همان نمای
+ * گزارش‌دهی را که کارفرما می‌بیند بررسی کنند — ولی برای همهٔ شرکت‌ها.
+ */
+function c_is_manager(): bool
+{
+    return Users::level((string)(c_current_user()['role'] ?? '')) >= Users::level('manager');
+}
+
+/**
+ * پروژه‌هایی که این کاربر در پورتال کارفرما می‌بیند.
+ *  • کارفرما → فقط پروژه‌های همان شرکت
+ *  • مدیر    → همهٔ پروژه‌های قابل‌نمایش برای کارفرما
+ */
+function c_projects(): array
+{
+    if (c_is_manager()) {
+        return Projects::list(['client_visible' => true]);
+    }
+    $uid = c_client_uid();
+    return $uid !== '' ? Projects::list(['client_uid' => $uid, 'client_visible' => true]) : [];
+}
+
+/** آیا این کاربر اجازهٔ دیدن این پروژه را دارد؟ */
+function c_can_view_project(?array $p): bool
+{
+    if (!$p || empty($p['client_visible'])) return false;
+    if (c_is_manager()) return true;
+    return (string)$p['client_uid'] === c_client_uid() && c_client_uid() !== '';
 }
 
 /** سرصفحه مشترک */
@@ -68,6 +100,9 @@ function c_head(string $title, string $active = ''): void
         </a>
     </nav>
     <div class="cl-user">
+        <?php if (c_is_manager()): ?>
+            <span class="pill info" title="شما مدیر هستید و پروژهٔ همهٔ کارفرماها را می‌بینید">👔 نمای مدیر — همهٔ کارفرماها</span>
+        <?php endif; ?>
         <span class="nm"><?php echo e($client['name'] ?? $me['full_name']); ?></span>
         <span class="av"><?php echo e(mb_substr($me['full_name'], 0, 1)); ?></span>
         <a href="logout.php" class="cl-btn ghost sm" title="خروج">خروج</a>

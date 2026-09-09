@@ -33,7 +33,6 @@ $myRequests = $enabled ? Attendance::requests('all', $myUid) : [];
 $isWorkday = Attendance::isWorkday($today);
 $holidayName = Attendance::holiday($today);
 
-include __DIR__ . '/sidebar.php';
 m_head('حضور و غیاب · پیام‌رسان');
 ?>
 <body>

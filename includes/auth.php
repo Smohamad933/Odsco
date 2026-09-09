@@ -45,7 +45,7 @@ function authenticate(string $username, string $password, string $area = 'admin'
         return ['success' => false, 'message' => '⛔ دسترسی پیام‌رسان برای حساب شما فعال نیست. با مدیر تماس بگیرید.'];
     }
 
-    if ($area === 'client' && $user['role'] !== 'client') {
+    if ($area === 'client' && $user['role'] !== 'client' && Users::level((string)$user['role']) < Users::level('manager')) {
         return ['success' => false, 'message' => '⛔ این حساب کاربری مخصوص پنل کارفرما نیست.'];
     }
 

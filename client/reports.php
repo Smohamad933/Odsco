@@ -16,9 +16,7 @@ c_check_login();
 $me        = c_current_user();
 $clientUid = c_client_uid();
 
-$projects = $clientUid !== ''
-    ? Projects::list(['client_uid' => $clientUid, 'client_visible' => true])
-    : [];
+$projects = c_projects();
 
 $projectFilter = (string)($_GET['project'] ?? '');
 

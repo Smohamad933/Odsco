@@ -53,7 +53,7 @@ input, textarea, select { font-family: inherit; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ============ چیدمان دو‌ستونه ============ */
-.tg-app { display: flex; height: 100dvh; height: 100vh; overflow: hidden; }
+.tg-app { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
 
 .tg-sidebar {
     width: var(--sb-w);
@@ -530,7 +530,7 @@ input, textarea, select { font-family: inherit; }
 
 /* ============ صفحه ورود ============ */
 .tg-login {
-    min-height: 100dvh; min-height: 100vh;
+    min-height: 100vh; min-height: 100dvh;
     display: flex; align-items: center; justify-content: center; padding: 20px;
     background: radial-gradient(circle at 50% 0%, #1b2c3d 0, var(--tg-bg) 60%);
     overflow: auto;

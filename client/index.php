@@ -17,9 +17,7 @@ $me       = c_current_user();
 $clientUid = c_client_uid();
 $client   = $clientUid !== '' ? Clients::find($clientUid) : null;
 
-$projects = $clientUid !== ''
-    ? Projects::list(['client_uid' => $clientUid, 'client_visible' => true])
-    : [];
+$projects = c_projects();
 
 // آمار
 $done = array_values(array_filter($projects, fn($p) => (int)$p['progress'] >= 100));

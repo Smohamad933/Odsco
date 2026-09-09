@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!$actions) {
-                throw new RuntimeException('حداقل یک کار (اعلان یا لاگ) تعریف کنید');
+                throw new RuntimeException('حداقل یک کار تعریف کنید — در بخش «کارها» دکمهٔ «+ افزودن اعلان» یا «+ افزودن لاگ» را بزنید و متن/عنوان آن را پر کنید.');
             }
 
             $payload = [
@@ -226,8 +226,17 @@ $isNew   = false;
 if (isset($_GET['edit'])) {
     if ($_GET['edit'] === 'new') {
         $isNew   = true;
+        // فرم قاعدهٔ تازه با یک ردیف شرط و یک ردیف اعلانِ آماده باز می‌شود.
+        // قبلاً هر دو خالی بودند و چون اعتبارسنجی «حداقل یک کار» می‌خواست،
+        // کاربر با زدن «ذخیره» فقط خطا می‌گرفت و نتیجه می‌گرفت
+        // «قابلیت افزودن قاعده جدید ندارم».
         $editing = ['uid' => '', 'title' => '', 'event' => 'project.update.created',
-                    'conditions' => [], 'actions' => [], 'is_active' => true];
+                    'conditions' => [['field' => '', 'op' => 'eq', 'value' => '']],
+                    'actions'    => [['type' => 'notify', 'target' => 'managers',
+                                      'title' => '📢 گزارش جدید: {project}',
+                                      'body'  => '{title} توسط {author}',
+                                      'level' => 'info', 'link' => '']],
+                    'is_active' => true];
     } else {
         $editing = Automation::find((string)$_GET['edit']);
         if (!$editing) $err = 'قاعده پیدا نشد.';

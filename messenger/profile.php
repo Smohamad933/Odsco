@@ -36,7 +36,6 @@ foreach (ProjectMembers::projectsOf($myUid) as $p) {
     }
 }
 
-include __DIR__ . '/sidebar.php';
 m_head($user['full_name'] . ' · پروفایل');
 ?>
 <body>

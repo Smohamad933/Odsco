@@ -164,4 +164,26 @@ foreach (['Fatal error', 'Warning:', 'Notice:', 'Deprecated:', 'Uncaught'] as $n
     }
 }
 
+/*
+ * ساختار سند: یک include اضافی پیش از تابع سرصفحه باعث می‌شد بخشی از HTML
+ * پیش از <!DOCTYPE> چاپ شود. مرورگر در آن حالت به quirks mode می‌رود و
+ * کل چیدمان به‌هم می‌ریزد — بدون اینکه هیچ خطای PHP دیده شود.
+ */
+if ($__rep['ok']) {
+    $__dtPos = stripos($__html, '<!DOCTYPE');
+    $__dtCnt = preg_match_all('/<!DOCTYPE/i', $__html);
+    if ($__dtCnt > 1) {
+        $__rep['fatal'] = 'سند ' . $__dtCnt . ' بار <!DOCTYPE> دارد';
+        $__rep['ok'] = false;
+    } elseif ($__dtPos !== false) {
+        $__before = ltrim(substr($__html, 0, $__dtPos));
+        // چیزی جز فاصله/کامنت نباید پیش از doctype باشد
+        if ($__before !== '' && !preg_match('/^(<!--.*?-->|\s)*$/s', $__before)) {
+            $__rep['fatal'] = 'محتوایی پیش از <!DOCTYPE> چاپ شده: «'
+                . mb_substr($__before, 0, 60) . '…»';
+            $__rep['ok'] = false;
+        }
+    }
+}
+
 $__emit($__rep);
