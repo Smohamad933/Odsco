@@ -1,17 +1,34 @@
 <?php
-require_once 'config.php';
-function add_log($action, $details = '') {
-    $logs = read_json('logs.json');
-    array_unshift($logs, [
-        'id' => uniqid(),
-        'action' => $action,
-        'details' => $details,
-        'user' => $_SESSION['admin_user'] ?? 'guest',
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
-    write_json('logs.json', array_slice($logs, 0, 1000));
+/**
+ * ============================================================================
+ *  Odsco — لاگ فعالیت (ذخیره در جدول activity_logs)
+ * ============================================================================
+ */
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
+
+function add_log(string $action, string $details = ''): void
+{
+    try {
+        ActivityLog::add($action, $details);
+    } catch (Throwable $e) {
+        error_log('[Odsco] add_log failed: ' . $e->getMessage());
+    }
 }
-function get_logs($limit = 100) {
-    return array_slice(read_json('logs.json'), 0, $limit);
+
+/** @return array<int, array<string, mixed>> */
+function get_logs(int $limit = 100): array
+{
+    try {
+        return ActivityLog::list($limit);
+    } catch (Throwable) {
+        return [];
+    }
 }
-?>
+
+function clear_logs(): void
+{
+    ActivityLog::clear();
+}

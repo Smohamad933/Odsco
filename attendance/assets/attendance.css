@@ -1,0 +1,323 @@
+/* ==========================================================================
+   Odsco — بخش حضور و غیاب
+   بدون وابستگی خارجی: فونت از assets خود سایت خوانده می‌شود
+   ========================================================================== */
+
+@font-face {
+    font-family: 'abar';
+    src: url('../../assets/abarfanum-vf.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --at-bg: #0f1620;
+    --at-card: #17212b;
+    --at-line: #0b1219;
+    --at-tx: #ffffff;
+    --at-mut: #8b9bab;
+    --at-ac: #4ea1ff;
+    --at-ok: #35d07f;
+    --at-err: #ff6b6b;
+    --at-warn: #ffb454;
+}
+
+body {
+    font-family: 'abar', Vazirmatn, Tahoma, 'Segoe UI', sans-serif;
+    background: var(--at-bg);
+    color: var(--at-tx);
+    direction: rtl;
+    line-height: 1.9;
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a { color: var(--at-ac); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------------------------------------------------------------- هدر */
+.at-top {
+    background: linear-gradient(180deg, #1a2632, #131c26);
+    border-bottom: 1px solid var(--at-line);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+.at-top-in {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 14px 16px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.at-brand { font-size: 15px; }
+.at-brand span { color: var(--at-mut); font-size: 12px; margin-right: 6px; }
+.at-user { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.at-who { font-weight: 700; }
+.at-role {
+    background: rgba(78, 161, 255, .14);
+    color: #9cc9ff;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+}
+.at-out { color: var(--at-mut); }
+.at-out:hover { color: var(--at-err); }
+
+.at-nav {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 12px 10px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+}
+.at-nav a {
+    padding: 7px 14px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: var(--at-mut);
+    white-space: nowrap;
+    background: rgba(255, 255, 255, .04);
+}
+.at-nav a.on { background: var(--at-ac); color: #fff; font-weight: 700; }
+
+/* ---------------------------------------------------------------- بدنه */
+.at-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 18px 16px 40px;
+    display: grid;
+    gap: 16px;
+}
+
+.at-card {
+    background: var(--at-card);
+    border: 1px solid var(--at-line);
+    border-radius: 18px;
+    padding: 20px;
+}
+.at-card h2 { font-size: 17px; margin-bottom: 6px; }
+.at-card h3 { font-size: 14px; margin: 20px 0 10px; color: #cfe0f0; }
+.at-hint { color: var(--at-mut); font-size: 12.5px; margin-bottom: 12px; }
+.at-empty { color: var(--at-mut); font-size: 13px; padding: 14px 0; text-align: center; }
+.at-mut { color: var(--at-mut); font-size: 11.5px; display: block; }
+
+/* ---------------------------------------------------------------- هشدارها */
+.at-alert {
+    padding: 12px 15px;
+    border-radius: 13px;
+    font-size: 13px;
+    border: 1px solid;
+}
+.at-alert.ok  { background: rgba(53, 208, 127, .1); border-color: rgba(53, 208, 127, .3); color: #9be8c2; }
+.at-alert.err { background: rgba(255, 107, 107, .1); border-color: rgba(255, 107, 107, .3); color: #ffb3b3; }
+
+/* ---------------------------------------------------------------- امروز */
+.at-today-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.at-clock {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    background: rgba(78, 161, 255, .1);
+    border: 1px solid rgba(78, 161, 255, .25);
+    padding: 6px 16px;
+    border-radius: 14px;
+    direction: ltr;
+}
+
+.at-big {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 18px 0;
+}
+.at-big-item {
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--at-line);
+    border-radius: 14px;
+    padding: 13px 10px;
+    text-align: center;
+}
+.at-big-item span { display: block; font-size: 11.5px; color: var(--at-mut); }
+.at-big-item b { font-size: 16px; }
+
+.at-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.at-actions form { flex: 1; min-width: 150px; }
+.at-actions .at-btn { width: 100%; }
+
+/* ---------------------------------------------------------------- دکمه‌ها */
+.at-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 12px 22px;
+    background: var(--at-ac);
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .18s;
+}
+.at-btn:hover { filter: brightness(1.1); }
+.at-btn:disabled { opacity: .45; cursor: not-allowed; }
+.at-btn.small { padding: 9px 15px; font-size: 13px; }
+.at-btn.in  { background: var(--at-ok); color: #05281a; }
+.at-btn.out { background: #ff8f5a; color: #331403; }
+
+/* ---------------------------------------------------------------- فرم‌ها */
+.at-form label, .at-inline label { display: block; font-size: 12.5px; color: var(--at-mut); margin: 12px 0 6px; font-weight: 600; }
+.at-inline { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.at-inline label { margin: 0; }
+
+input[type=text], input[type=password], input[type=date],
+input[type=time], input[type=month], input[type=number], textarea, select {
+    width: 100%;
+    padding: 11px 13px;
+    background: var(--at-bg);
+    border: 1px solid var(--at-line);
+    border-radius: 11px;
+    color: var(--at-tx);
+    font-family: inherit;
+    font-size: 13.5px;
+    outline: none;
+    transition: .18s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--at-ac); }
+.at-inline input, .at-inline select { width: auto; }
+
+.at-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.at-grid label { margin-top: 0; }
+
+/* ---------------------------------------------------------------- آمار */
+.at-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+}
+.at-stat {
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--at-line);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+}
+.at-stat b { display: block; font-size: 21px; font-weight: 800; }
+.at-stat span { font-size: 11.5px; color: var(--at-mut); }
+
+/* ---------------------------------------------------------------- جدول و لیست */
+.at-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+.at-table th, .at-table td { padding: 10px 8px; border-bottom: 1px solid var(--at-line); text-align: center; }
+.at-table th { color: var(--at-mut); font-size: 11.5px; white-space: nowrap; }
+.at-table tr:last-child td { border-bottom: 0; }
+
+.at-list { display: grid; gap: 8px; }
+.at-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(255, 255, 255, .035);
+    border: 1px solid var(--at-line);
+    border-radius: 13px;
+    padding: 11px 14px;
+}
+.at-code { letter-spacing: 2px; direction: ltr; display: inline-block; font-size: 14px; }
+
+.at-chip {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    background: rgba(255, 255, 255, .07);
+    color: var(--at-mut);
+    white-space: nowrap;
+}
+.at-chip.on   { background: rgba(53, 208, 127, .16); color: #8fe6b6; }
+.at-chip.off  { background: rgba(255, 107, 107, .14); color: #ffabab; }
+.at-chip.warn { background: rgba(255, 180, 84, .15); color: #ffd9a0; }
+
+/* ---------------------------------------------------------------- فوتر */
+.at-foot {
+    border-top: 1px solid var(--at-line);
+    padding: 14px 16px;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--at-mut);
+}
+
+/* ---------------------------------------------------------------- ورود */
+.at-login-page { justify-content: center; align-items: center; padding: 20px; }
+.at-login { width: 100%; max-width: 400px; }
+.at-login-box {
+    background: var(--at-card);
+    border: 1px solid var(--at-line);
+    border-radius: 22px;
+    padding: 34px 26px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+}
+.at-login-logo {
+    width: 70px; height: 70px;
+    margin: 0 auto 14px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #4ea1ff, #2b6cb0);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+}
+.at-login-box h1 { font-size: 20px; margin-bottom: 4px; }
+.at-sub { color: var(--at-mut); font-size: 12.5px; margin-bottom: 18px; }
+.at-login-box form { text-align: right; }
+.at-login-box label { display: block; font-size: 12.5px; color: var(--at-mut); margin: 13px 0 6px; }
+.at-login-box .at-btn { width: 100%; margin-top: 20px; }
+.at-login-foot { margin-top: 18px; display: flex; gap: 16px; justify-content: center; font-size: 12px; }
+.at-login .at-alert { text-align: right; margin-bottom: 14px; }
+
+/* ---------------------------------------------------------------- موبایل */
+@media (max-width: 640px) {
+    .at-main { padding: 14px 12px 34px; }
+    .at-card { padding: 16px 14px; border-radius: 15px; }
+    .at-clock { font-size: 21px; }
+    .at-top-in { padding: 12px 12px 6px; }
+    .at-table thead { display: none; }
+    .at-table tr {
+        display: block;
+        border: 1px solid var(--at-line);
+        border-radius: 12px;
+        margin-bottom: 9px;
+        padding: 5px 9px;
+    }
+    .at-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 0;
+        padding: 6px 2px;
+        text-align: left;
+    }
+    .at-table td:before { content: attr(data-l); font-size: 11px; color: var(--at-mut); }
+}

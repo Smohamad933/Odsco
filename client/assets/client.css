@@ -1,0 +1,306 @@
+/* ============================================================================
+   Odsco — پنل کارفرما (RTL / ریسپانسیو)
+   ========================================================================== */
+
+:root {
+    --cl-bg: #f4f6fb;
+    --cl-panel: #ffffff;
+    --cl-line: #e4e9f2;
+    --cl-text: #1d2433;
+    --cl-muted: #6b7688;
+    --cl-accent: #1a56b0;
+    --cl-accent2: #667eea;
+    --cl-ok: #10893e;
+    --cl-warn: #b06a00;
+    --cl-danger: #c0392b;
+    --cl-radius: 16px;
+    --cl-shadow: 0 2px 14px rgba(23, 43, 99, .07);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'abar', 'Vazirmatn', Tahoma, sans-serif;
+    background: var(--cl-bg);
+    color: var(--cl-text);
+    line-height: 1.8;
+    -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--cl-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------------------------------------------------------------- ورود --- */
+.cl-login-page {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #111a2e 0%, #1a2b4d 50%, #243b6b 100%);
+}
+
+.cl-login { width: 100%; max-width: 420px; }
+
+.cl-login-box {
+    background: var(--cl-panel);
+    border-radius: 22px;
+    padding: 34px 28px 26px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+    text-align: center;
+}
+
+.cl-logo { font-size: 42px; line-height: 1; }
+.cl-login-box h1 { font-size: 21px; margin: 12px 0 4px; }
+.cl-login-box .sub { color: var(--cl-muted); font-size: 13px; margin: 0 0 22px; }
+
+.cl-field { text-align: right; margin-bottom: 14px; }
+.cl-field label { display: block; font-size: 12.5px; font-weight: 700; color: #46506a; margin-bottom: 6px; }
+
+.cl-field input,
+.cl-field select,
+.cl-field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--cl-line);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fbfcfe;
+    color: var(--cl-text);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.cl-field input:focus,
+.cl-field select:focus,
+.cl-field textarea:focus {
+    outline: none;
+    border-color: var(--cl-accent2);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, .16);
+    background: #fff;
+}
+
+.cl-btn {
+    display: inline-block;
+    padding: 11px 22px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--cl-accent), var(--cl-accent2));
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+}
+.cl-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(26, 86, 176, .3); text-decoration: none; }
+.cl-btn:active { transform: translateY(0); }
+.cl-btn.block { display: block; width: 100%; padding: 13px; margin-top: 6px; }
+.cl-btn.ghost { background: #eef1f8; color: #3c4763; }
+.cl-btn.ghost:hover { box-shadow: none; background: #e3e8f4; }
+.cl-btn.danger { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+.cl-btn.sm { padding: 7px 14px; font-size: 12.5px; }
+
+.cl-alert {
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: right;
+}
+.cl-alert.err { background: #fdeceb; color: var(--cl-danger); border: 1px solid #f5c6c2; }
+.cl-alert.ok  { background: #e7f6ec; color: var(--cl-ok); border: 1px solid #bfe6cb; }
+
+.cl-hint { font-size: 12px; color: var(--cl-muted); line-height: 2; margin: 18px 0 0; }
+
+.cl-links { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.cl-links a {
+    font-size: 12px; color: #5b6784; background: #f1f4fa;
+    padding: 8px 14px; border-radius: 999px;
+}
+.cl-links a:hover { background: #e5eaf5; text-decoration: none; }
+
+/* ------------------------------------------------------------- چیدمان --- */
+.cl-topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255, 255, 255, .94);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--cl-line);
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 12px;
+}
+
+.cl-topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 15px; color: var(--cl-text); }
+.cl-topbar .brand:hover { text-decoration: none; }
+.cl-topbar .brand span.ico {
+    width: 34px; height: 34px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--cl-accent), var(--cl-accent2));
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+
+.cl-topbar nav { display: flex; gap: 4px; margin-right: auto; flex-wrap: wrap; }
+.cl-topbar nav a {
+    padding: 8px 14px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; color: #4d5872;
+}
+.cl-topbar nav a:hover { background: #f0f3fa; text-decoration: none; }
+.cl-topbar nav a.on { background: linear-gradient(135deg, var(--cl-accent), var(--cl-accent2)); color: #fff; }
+
+.cl-user { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--cl-muted); }
+.cl-user .av {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--cl-accent), var(--cl-accent2));
+    color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+}
+
+.cl-wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 60px; }
+
+.cl-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.cl-page-head h1 { font-size: 22px; margin: 0 0 4px; }
+.cl-page-head p { margin: 0; color: var(--cl-muted); font-size: 13px; }
+
+/* ---------------------------------------------------------------- کارت --- */
+.cl-card {
+    background: var(--cl-panel);
+    border: 1px solid var(--cl-line);
+    border-radius: var(--cl-radius);
+    box-shadow: var(--cl-shadow);
+    padding: 20px;
+    margin-bottom: 18px;
+}
+.cl-card h2 { font-size: 16px; margin: 0 0 14px; }
+.cl-card h3 { font-size: 14.5px; margin: 0 0 12px; }
+
+.cl-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
+
+.cl-stat {
+    background: var(--cl-panel);
+    border: 1px solid var(--cl-line);
+    border-radius: var(--cl-radius);
+    box-shadow: var(--cl-shadow);
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px;
+}
+.cl-stat .ico {
+    width: 44px; height: 44px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+    background: #eef2fb; flex-shrink: 0;
+}
+.cl-stat .val { font-size: 21px; font-weight: 800; line-height: 1.2; }
+.cl-stat .lbl { font-size: 12px; color: var(--cl-muted); }
+
+/* ------------------------------------------------------------ پروژه‌ها --- */
+.cl-projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+.cl-proj {
+    background: var(--cl-panel);
+    border: 1px solid var(--cl-line);
+    border-radius: var(--cl-radius);
+    box-shadow: var(--cl-shadow);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform .14s, box-shadow .14s;
+}
+.cl-proj:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(23, 43, 99, .12); }
+
+.cl-proj .cover {
+    height: 132px; background: #dde4f2 center/cover no-repeat;
+    display: flex; align-items: flex-end; padding: 10px;
+}
+.cl-proj .cover .pill { background: rgba(255, 255, 255, .92); }
+
+.cl-proj .body { padding: 15px 16px 17px; flex: 1; display: flex; flex-direction: column; }
+.cl-proj .body h3 { font-size: 15px; margin: 0 0 6px; }
+.cl-proj .meta { font-size: 12px; color: var(--cl-muted); margin-bottom: 12px; }
+
+.cl-bar { height: 9px; background: #e9eef7; border-radius: 6px; overflow: hidden; }
+.cl-bar > span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--cl-accent), var(--cl-accent2)); }
+.cl-bar.ok > span { background: linear-gradient(90deg, #10893e, #2ecc71); }
+
+.cl-pct { display: flex; justify-content: space-between; font-size: 12px; color: var(--cl-muted); margin-top: 6px; }
+
+/* ------------------------------------------------------------- تایم‌لاین --- */
+.cl-timeline { position: relative; padding-right: 24px; }
+.cl-timeline::before { content: ""; position: absolute; right: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--cl-line); }
+
+.cl-tl { position: relative; margin-bottom: 18px; }
+.cl-tl::before {
+    content: ""; position: absolute; right: -24px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--cl-accent2);
+}
+.cl-tl.success::before { border-color: var(--cl-ok); }
+.cl-tl.warning::before { border-color: var(--cl-warn); }
+.cl-tl.danger::before  { border-color: var(--cl-danger); }
+
+.cl-tl .tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cl-tl .tl-head strong { font-size: 14px; }
+.cl-tl .tl-time { font-size: 11.5px; color: var(--cl-muted); margin-right: auto; }
+.cl-tl .tl-body { font-size: 13px; color: #46506a; line-height: 2; margin-top: 6px; }
+.cl-tl .tl-attach { margin-top: 8px; }
+.cl-tl .tl-attach img { max-width: 100%; border-radius: 12px; border: 1px solid var(--cl-line); }
+
+/* --------------------------------------------------------------- برچسب --- */
+.pill { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.pill.info   { background: #e7f0ff; color: var(--cl-accent); }
+.pill.ok     { background: #e4f8ea; color: var(--cl-ok); }
+.pill.warn   { background: #fff4e0; color: var(--cl-warn); }
+.pill.danger { background: #ffe8e8; color: var(--cl-danger); }
+.pill.mute   { background: #eef1f6; color: #66728a; }
+
+/* ---------------------------------------------------------------- جدول --- */
+.cl-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.cl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cl-table th, .cl-table td { padding: 11px 12px; text-align: right; border-bottom: 1px solid var(--cl-line); }
+.cl-table th { font-size: 12px; color: var(--cl-muted); font-weight: 700; background: #f8fafd; white-space: nowrap; }
+.cl-table tr:last-child td { border-bottom: none; }
+
+/* ------------------------------------------------------------- اعلان‌ها --- */
+.cl-notice {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--cl-panel); border: 1px solid var(--cl-line);
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+}
+.cl-notice.unread { border-right: 4px solid var(--cl-accent2); }
+.cl-notice .ico {
+    width: 38px; height: 38px; border-radius: 12px; background: #eef2fb;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.cl-notice .n-title { font-size: 13.5px; font-weight: 700; }
+.cl-notice .n-body { font-size: 12.5px; color: var(--cl-muted); line-height: 1.9; margin-top: 3px; }
+.cl-notice .n-time { font-size: 11px; color: #98a2b3; margin-top: 5px; }
+
+.cl-empty { text-align: center; padding: 50px 20px; color: var(--cl-muted); }
+.cl-empty .big { font-size: 40px; margin-bottom: 10px; }
+
+/* ----------------------------------------------------------- ریسپانسیو --- */
+@media screen and (max-width: 900px) {
+    .cl-topbar { flex-wrap: wrap; padding: 10px 14px; }
+    .cl-topbar nav { order: 3; width: 100%; margin-right: 0; overflow-x: auto; }
+    .cl-topbar nav a { white-space: nowrap; }
+    .cl-user .nm { display: none; }
+}
+
+@media screen and (max-width: 640px) {
+    .cl-wrap { padding: 16px 12px 44px; }
+    .cl-card { padding: 15px; border-radius: 14px; }
+    .cl-page-head h1 { font-size: 19px; }
+    .cl-stats { grid-template-columns: repeat(2, 1fr); gap: 9px; }
+    .cl-stat { padding: 12px; gap: 10px; }
+    .cl-stat .ico { width: 36px; height: 36px; font-size: 17px; }
+    .cl-stat .val { font-size: 17px; }
+    .cl-projects { grid-template-columns: 1fr; }
+    .cl-login-box { padding: 26px 20px 20px; }
+    .cl-table { font-size: 12px; }
+    .cl-table th, .cl-table td { padding: 8px 9px; }
+}
+
+@media screen and (max-width: 400px) {
+    .cl-stats { grid-template-columns: 1fr; }
+}
+
+@media print {
+    .cl-topbar, .cl-btn, .cl-links { display: none !important; }
+    body { background: #fff; }
+    .cl-card, .cl-proj { box-shadow: none; }
+}

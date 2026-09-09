@@ -85,8 +85,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'created_at' => date('Y-m-d H:i:s')
                 ];
                 
+                $new_project['manager_uid']    = (string)($_POST['manager_uid'] ?? '');
+                $new_project['client_uid']     = (string)($_POST['client_uid'] ?? '');
+                $new_project['progress']       = (int)($_POST['progress'] ?? 0);
+                $new_project['start_date']     = (string)($_POST['start_date'] ?? '');
+                $new_project['end_date']       = (string)($_POST['end_date'] ?? '');
+                $new_project['client_visible'] = isset($_POST['client_visible']);
+                if (!empty($_POST['client_uid'])) {
+                    $cl = Clients::find((string)$_POST['client_uid']);
+                    if ($cl) $new_project['client'] = $cl['name'];
+                }
+
                 $projects[] = $new_project;
                 write_json('projects.json', $projects);
+
+                // اعضای پروژه
+                $members = [];
+                foreach ((array)($_POST['member_uid'] ?? []) as $i => $muid) {
+                    if ((string)$muid === '') continue;
+                    $members[] = [
+                        'user_uid' => (string)$muid,
+                        'role_in_project' => (string)(($_POST['member_role'] ?? [])[$i] ?? 'عضو تیم'),
+                    ];
+                }
+                if (Db::ready()) {
+                    ProjectMembers::sync($new_project['id'], $members, current_admin_uid());
+                }
+
                 add_log('add_project', "پروژه {$new_project['title']} اضافه شد");
                 $message = '✅ پروژه اضافه شد';
                 $show_form = false;
@@ -131,6 +156,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     }
                 }
                 write_json('projects.json', $projects);
+
+                // اعضای پروژه + فیلدهای مدیریت پروژه
+                $pid = $project_id;
+                $members = [];
+                foreach ((array)($_POST['member_uid'] ?? []) as $i => $muid) {
+                    if ((string)$muid === '') continue;
+                    $members[] = [
+                        'user_uid' => (string)$muid,
+                        'role_in_project' => (string)(($_POST['member_role'] ?? [])[$i] ?? 'عضو تیم'),
+                    ];
+                }
+                if (Db::ready()) {
+                    ProjectMembers::sync($pid, $members, current_admin_uid());
+                    Projects::update($pid, [
+                        'manager_uid'    => (string)($_POST['manager_uid'] ?? ''),
+                        'client_uid'     => (string)($_POST['client_uid'] ?? ''),
+                        'progress'       => (int)($_POST['progress'] ?? 0),
+                        'start_date'     => (string)($_POST['start_date'] ?? ''),
+                        'end_date'       => (string)($_POST['end_date'] ?? ''),
+                        'client_visible' => isset($_POST['client_visible']),
+                        'show_on_home'   => isset($_POST['show_on_home']),
+                    ]);
+                }
+
                 add_log('edit_project', "پروژه {$project_id} ویرایش شد");
                 $message = '✅ پروژه ویرایش شد';
                 $show_form = false;
@@ -170,6 +219,15 @@ $projects = get_projects();
 usort($projects, function($a, $b) {
     return strtotime($b['created_at'] ?? 'now') - strtotime($a['created_at'] ?? 'now');
 });
+
+$all_users   = Users::list(['active' => true, 'internal_only' => true]);
+$all_clients = Clients::list();
+$edit_members = [];
+if ($editing_project) {
+    foreach (ProjectMembers::list((string)($editing_project['id'] ?? '')) as $mm) {
+        $edit_members[$mm['user_uid']] = $mm['role_in_project'];
+    }
+}
 
 $categories = read_json('categories.json');
 if (empty($categories)) {
@@ -354,6 +412,103 @@ if (empty($categories)) {
                             <?php endif; ?>
                         </div>
                         
+                        <!-- مدیریت پروژه -->
+                        <div class="form-section">
+                            <div class="form-section__title">📈 مدیریت پروژه</div>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label>کارفرما (شرکت)</label>
+                                    <select name="client_uid" <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                        <option value="">— بدون کارفرما —</option>
+                                        <?php foreach ($all_clients as $c): ?>
+                                            <option value="<?php echo htmlspecialchars($c['uid'], ENT_QUOTES); ?>"
+                                                <?php echo (($editing_project['client_uid'] ?? '') === $c['uid']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($c['name'], ENT_QUOTES); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>مدیر پروژه</label>
+                                    <select name="manager_uid" <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                        <option value="">— تعیین نشده —</option>
+                                        <?php foreach ($all_users as $u): ?>
+                                            <option value="<?php echo htmlspecialchars($u['uid'], ENT_QUOTES); ?>"
+                                                <?php echo (($editing_project['manager_uid'] ?? '') === $u['uid']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($u['full_name'], ENT_QUOTES); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>پیشرفت (٪)</label>
+                                    <input type="number" name="progress" min="0" max="100"
+                                           value="<?php echo (int)($editing_project['progress'] ?? 0); ?>"
+                                           <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label>تاریخ شروع</label>
+                                    <input type="date" name="start_date"
+                                           value="<?php echo htmlspecialchars((string)($editing_project['start_date'] ?? ''), ENT_QUOTES); ?>"
+                                           <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label>تاریخ پایان (مهلت)</label>
+                                    <input type="date" name="end_date"
+                                           value="<?php echo htmlspecialchars((string)($editing_project['end_date'] ?? ''), ENT_QUOTES); ?>"
+                                           <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label>نمایش در پنل کارفرما</label>
+                                    <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:400;margin-top:8px">
+                                        <input type="checkbox" name="client_visible" value="1"
+                                               <?php echo !empty($editing_project['client_visible']) ? 'checked' : ''; ?>
+                                               <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                        کارفرما این پروژه و گزارش‌هایش را ببیند
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- اعضای پروژه -->
+                        <div class="form-section">
+                            <div class="form-section__title">👥 اعضای پروژه</div>
+                            <p style="font-size:12px;color:#888;margin:0 0 12px">
+                                اعضای انتخاب‌شده به تسک‌ها و گزارش‌های این پروژه دسترسی دارند و اعلان‌ها برایشان ارسال می‌شود.
+                            </p>
+                            <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;max-height:300px;overflow:auto">
+                                <?php if (!$all_users): ?>
+                                    <p style="color:#999;font-size:12px;margin:0">کاربری برای انتخاب وجود ندارد.</p>
+                                <?php else: ?>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
+                                    <?php foreach ($all_users as $u):
+                                        $on = array_key_exists($u['uid'], $edit_members);
+                                    ?>
+                                    <label style="display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #eee;border-radius:10px;padding:8px 10px;font-size:12px">
+                                        <input type="checkbox" name="member_uid[]" value="<?php echo htmlspecialchars($u['uid'], ENT_QUOTES); ?>"
+                                               <?php echo $on ? 'checked' : ''; ?> <?php echo $is_viewer ? 'disabled' : ''; ?>
+                                               style="width:auto">
+                                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                            <?php echo htmlspecialchars($u['full_name'], ENT_QUOTES); ?>
+                                            <small style="color:#999">(<?php echo htmlspecialchars(Users::roleLabel((string)$u['role']), ENT_QUOTES); ?>)</small>
+                                        </span>
+                                        <input type="text" name="member_role[]"
+                                               value="<?php echo htmlspecialchars((string)($edit_members[$u['uid']] ?? 'عضو تیم'), ENT_QUOTES); ?>"
+                                               placeholder="نقش" <?php echo $is_viewer ? 'disabled' : ''; ?>
+                                               style="width:88px;padding:5px 8px;font-size:11px">
+                                    </label>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($editing_project): ?>
+                            <p style="font-size:11.5px;color:#888;margin:10px 0 0">
+                                💡 برای مدیریت وظایف و گزارش پیشرفت، پس از ذخیره به
+                                <a href="workspace.php?project=<?php echo htmlspecialchars((string)($editing_project['id'] ?? ''), ENT_QUOTES); ?>">میز کار پروژه</a> بروید.
+                            </p>
+                            <?php endif; ?>
+                        </div>
+
                         <!-- مشخصات فنی -->
                         <div class="form-section">
                             <div class="form-section__title">🔧 مشخصات فنی</div>
