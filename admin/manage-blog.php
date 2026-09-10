@@ -1,7 +1,13 @@
 <?php
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
-require_once '../includes/logger.php';
+/**
+ * مدیریت مقالات — MySQL
+ */
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/logger.php';
 
 check_login();
 
@@ -9,103 +15,72 @@ $message = '';
 $error = '';
 $editing_post = null;
 $show_form = isset($_GET['add']) || isset($_GET['edit']);
-$is_viewer = ($_SESSION['admin_role'] ?? '') === 'viewer';
-
-if (isset($_SESSION['error_message'])) {
-    $error = $_SESSION['error_message'];
-    unset($_SESSION['error_message']);
-}
+$is_viewer = is_viewer();
 
 if (isset($_GET['edit'])) {
-    $posts = read_json('blog_posts.json');
-    foreach ($posts as $post) {
-        if ($post['id'] === $_GET['edit']) {
-            $editing_post = $post;
-            break;
-        }
-    }
+    $uid = (string)$_GET['edit'];
+    $editing_post = Blog::find($uid);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    
+    csrf_guard();
     if ($is_viewer) {
-        $error = '⛔ شما فقط بیننده هستید و دسترسی به تغییرات ندارید!';
+        $error = '⛔ شما فقط بیننده هستید!';
     } else {
-        if ($_POST['action'] === 'add_post' || $_POST['action'] === 'edit_post') {
-            $posts = read_json('blog_posts.json');
-            
-            // ============ آپلود عکس ============
-            $image = '';
+        $act = (string)$_POST['action'];
+        if ($act === 'add_post' || $act === 'edit_post') {
+            $image = null;
             if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = '../uploads/blog/';
-                if (!file_exists($upload_dir)) mkdir($upload_dir, 0755, true);
-                $file_name = time() . '_' . basename($_FILES['image']['name']);
-                if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $file_name)) {
+                $upload_dir = dirname(__DIR__) . '/uploads/blog/';
+                if (!is_dir($upload_dir)) @mkdir($upload_dir, 0755, true);
+                $file_name = time() . '_' . bin2hex(random_bytes(4)) . '_' . basename($_FILES['image']['name']);
+                if (@move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $file_name)) {
                     $image = 'uploads/blog/' . $file_name;
                 }
             }
-            
-            if ($_POST['action'] === 'add_post') {
-                if (empty($image)) $image = 'assets/default-post.jpg';
-                
-                $new_post = [
-                    'id' => 'post_' . uniqid(),
-                    'title' => sanitize($_POST['title']),
-                    'slug' => create_slug($_POST['title']),
-                    'excerpt' => sanitize($_POST['excerpt']),
-                    'content' => $_POST['content'],
-                    'image' => $image,
-                    'author' => $_SESSION['admin_name'],
-                    'date' => date('Y-m-d H:i:s'),
-                    'category' => sanitize($_POST['category']),
-                    'tags' => sanitize($_POST['tags'] ?? ''),
-                    'status' => sanitize($_POST['status'] ?? 'published'),
-                    'views' => 0
-                ];
-                
-                $posts[] = $new_post;
-                write_json('blog_posts.json', $posts);
-                add_log('add_post', "مقاله {$new_post['title']} اضافه شد");
-                $message = '✅ مقاله منتشر شد';
-                $show_form = false;
+
+            $data = [
+                'title' => trim((string)($_POST['title'] ?? '')),
+                'excerpt' => trim((string)($_POST['excerpt'] ?? '')),
+                'content' => (string)($_POST['content'] ?? ''),
+                'category' => (string)($_POST['category'] ?? 'عمومی'),
+                'tags' => (string)($_POST['tags'] ?? ''),
+                'status' => (string)($_POST['status'] ?? 'published'),
+            ];
+            if ($image !== null) $data['image'] = $image;
+            if (empty($data['title'])) {
+                $error = 'عنوان الزامی است';
             } else {
-                $post_id = $_POST['post_id'];
-                foreach ($posts as &$post) {
-                    if ($post['id'] === $post_id) {
-                        if (!empty($image)) $post['image'] = $image;
-                        $post['title'] = sanitize($_POST['title']);
-                        $post['excerpt'] = sanitize($_POST['excerpt']);
-                        $post['content'] = $_POST['content'];
-                        $post['category'] = sanitize($_POST['category']);
-                        $post['tags'] = sanitize($_POST['tags'] ?? '');
-                        $post['status'] = sanitize($_POST['status'] ?? 'published');
-                        break;
+                if ($act === 'add_post') {
+                    $data['author'] = $_SESSION['admin_name'] ?? 'مدیر';
+                    $data['date'] = date('Y-m-d H:i:s');
+                    Blog::create($data);
+                    add_log('add_post', "مقاله {$data['title']} اضافه شد");
+                    $message = '✅ مقاله منتشر شد';
+                } else {
+                    $pid = (string)($_POST['post_id'] ?? '');
+                    if ($pid !== '') {
+                        Blog::update($pid, $data);
+                        add_log('edit_post', "مقاله {$pid} ویرایش شد");
+                        $message = '✅ مقاله ویرایش شد';
                     }
                 }
-                write_json('blog_posts.json', $posts);
-                add_log('edit_post', "مقاله ویرایش شد");
-                $message = '✅ مقاله ویرایش شد';
                 $show_form = false;
                 $editing_post = null;
             }
-        }
-        
-        if ($_POST['action'] === 'delete_post') {
-            $post_id = $_POST['post_id'];
-            $posts = read_json('blog_posts.json');
-            foreach ($posts as $key => $post) {
-                if ($post['id'] === $post_id) {
-                    unset($posts[$key]);
-                    write_json('blog_posts.json', array_values($posts));
-                    $message = '✅ مقاله حذف شد';
-                    break;
-                }
+        } elseif ($act === 'delete_post') {
+            $pid = (string)($_POST['post_id'] ?? '');
+            if ($pid !== '') {
+                Blog::delete($pid);
+                add_log('delete_post', "مقاله {$pid} حذف شد");
+                $message = '✅ مقاله حذف شد';
             }
         }
     }
 }
 
-$posts = get_blog_posts();
+$posts = Blog::list();
+usort($posts, fn($a,$b)=> strcmp($b['date'] ?? '', $a['date'] ?? ''));
 $blog_categories = ['عمومی', 'معماری', 'عمران', 'تأسیسات', 'اخبار', 'مهندسی', 'طراحی'];
 ?>
 <!DOCTYPE html>
@@ -160,102 +135,65 @@ $blog_categories = ['عمومی', 'معماری', 'عمران', 'تأسیسات'
         .btn { padding: 11px 25px; border: none; border-radius: 10px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.3s; text-decoration: none; }
         .btn-primary { background: #1a1a1a; color: #fff; }
         .btn-secondary { background: #f5f5f5; color: #666; }
-        @media (max-width: 768px) {
-            .form-grid-2 { grid-template-columns: 1fr; }
-            .form-group.full { grid-column: auto; }
-            .blog-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 768px) { .form-grid-2 { grid-template-columns: 1fr; } .form-group.full { grid-column: auto; } .blog-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="admin-layout">
         <?php include 'sidebar.php'; ?>
-        
         <main class="main-content">
             <header class="top-bar">
                 <h1>📝 مدیریت مقالات</h1>
                 <?php if ($is_viewer): ?><span class="badge" style="background:#fff8e1;color:#e65100;">👁️ حالت مشاهده</span><?php endif; ?>
             </header>
-            
-            <?php if ($message): ?><div class="alert alert-success"><?php echo $message; ?></div><?php endif; ?>
-            <?php if ($error): ?><div class="alert alert-error"><?php echo $error; ?></div><?php endif; ?>
+            <?php if ($message): ?><div class="alert alert-success"><?php echo e($message); ?></div><?php endif; ?>
+            <?php if ($error): ?><div class="alert alert-error"><?php echo e($error); ?></div><?php endif; ?>
             <?php if ($is_viewer): ?><div class="viewer-banner">⛔ شما فقط بیننده هستید!</div><?php endif; ?>
-            
             <?php if ($show_form): ?>
             <div class="form-modern">
                 <div class="form-modern__header">
                     <h2><?php echo $editing_post ? ($is_viewer ? '👁️ مشاهده مقاله' : '✏️ ویرایش مقاله') : '➕ افزودن مقاله'; ?></h2>
                     <a href="manage-blog.php" class="btn-back">← بازگشت</a>
                 </div>
-                
                 <form method="POST" enctype="multipart/form-data" id="blogForm">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="<?php echo $editing_post ? 'edit_post' : 'add_post'; ?>">
-                    <?php if ($editing_post): ?><input type="hidden" name="post_id" value="<?php echo $editing_post['id']; ?>"><?php endif; ?>
-                    
+                    <?php if ($editing_post): ?><input type="hidden" name="post_id" value="<?php echo e($editing_post['id'] ?? $editing_post['uid']); ?>"><?php endif; ?>
                     <div class="form-modern__body">
                         <div class="form-grid-2">
-                            <div class="form-group">
-                                <label>عنوان *</label>
-                                <input type="text" name="title" value="<?php echo $editing_post['title'] ?? ''; ?>" <?php echo $is_viewer ? 'disabled' : 'required'; ?>>
-                            </div>
-                            <div class="form-group">
-                                <label>دسته‌بندی</label>
-                                <select name="category" <?php echo $is_viewer ? 'disabled' : ''; ?>>
-                                    <?php foreach ($blog_categories as $cat): ?>
-                                        <option value="<?php echo $cat; ?>" <?php echo ($editing_post && ($editing_post['category'] ?? '') === $cat) ? 'selected' : ''; ?>><?php echo $cat; ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>وضعیت</label>
-                                <select name="status" <?php echo $is_viewer ? 'disabled' : ''; ?>>
-                                    <option value="published" <?php echo ($editing_post && ($editing_post['status'] ?? '') === 'published') ? 'selected' : ''; ?>>منتشر شده</option>
-                                    <option value="draft" <?php echo ($editing_post && ($editing_post['status'] ?? '') === 'draft') ? 'selected' : ''; ?>>پیش‌نویس</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>برچسب‌ها</label>
-                                <input type="text" name="tags" value="<?php echo $editing_post['tags'] ?? ''; ?>" <?php echo $is_viewer ? 'disabled' : ''; ?>>
-                            </div>
-                            <div class="form-group full">
-                                <label>خلاصه *</label>
-                                <textarea name="excerpt" rows="3" <?php echo $is_viewer ? 'disabled' : 'required'; ?>><?php echo $editing_post['excerpt'] ?? ''; ?></textarea>
-                            </div>
-                            
+                            <div class="form-group"><label>عنوان *</label><input type="text" name="title" value="<?php echo e($editing_post['title'] ?? ''); ?>" <?php echo $is_viewer ? 'disabled' : 'required'; ?>></div>
+                            <div class="form-group"><label>دسته‌بندی</label><select name="category"><?php foreach ($blog_categories as $cat): ?><option value="<?php echo e($cat); ?>" <?php echo ($editing_post && ($editing_post['category'] ?? '') === $cat) ? 'selected' : ''; ?>><?php echo e($cat); ?></option><?php endforeach; ?></select></div>
+                            <div class="form-group"><label>وضعیت</label><select name="status"><option value="published" <?php echo ($editing_post && ($editing_post['status'] ?? '') === 'published') ? 'selected' : ''; ?>>منتشر شده</option><option value="draft" <?php echo ($editing_post && ($editing_post['status'] ?? '') === 'draft') ? 'selected' : ''; ?>>پیش‌نویس</option></select></div>
+                            <div class="form-group"><label>برچسب‌ها</label><input type="text" name="tags" value="<?php echo e(is_array($editing_post['tags'] ?? null) ? implode(',', $editing_post['tags']) : ($editing_post['tags'] ?? '')); ?>"></div>
+                            <div class="form-group full"><label>خلاصه *</label><textarea name="excerpt" rows="3" <?php echo $is_viewer ? 'disabled' : 'required'; ?>><?php echo e($editing_post['excerpt'] ?? ''); ?></textarea></div>
                             <?php if (!$is_viewer): ?>
                             <div class="form-group full">
                                 <label>عکس مقاله:</label>
                                 <div class="upload-area" onclick="document.getElementById('imageInput').click()">
                                     <div class="icon">🖼️</div>
                                     <p>کلیک کنید و عکس را انتخاب کنید</p>
-                                    <?php if ($editing_post && !empty($editing_post['image'])): ?>
-                                        <img src="../<?php echo $editing_post['image']; ?>" class="image-preview" id="imagePreview" style="display:block;">
-                                    <?php else: ?>
-                                        <img src="" class="image-preview" id="imagePreview">
-                                    <?php endif; ?>
+                                    <?php if ($editing_post && !empty($editing_post['image'])): ?><img src="../<?php echo e($editing_post['image']); ?>" class="image-preview" id="imagePreview" style="display:block;"><?php else: ?><img src="" class="image-preview" id="imagePreview"><?php endif; ?>
                                 </div>
                                 <input type="file" id="imageInput" name="image" accept="image/*" style="display:none;" onchange="previewImage(this)">
                             </div>
                             <?php endif; ?>
-                            
                             <div class="form-group full">
                                 <label>متن کامل:</label>
                                 <div class="mini-toolbar">
-                                    <button type="button" onclick="doCmd('bold')" <?php echo $is_viewer ? 'disabled' : ''; ?>><b>B</b></button>
-                                    <button type="button" onclick="doCmd('italic')" <?php echo $is_viewer ? 'disabled' : ''; ?>><i>I</i></button>
-                                    <button type="button" onclick="doCmd('underline')" <?php echo $is_viewer ? 'disabled' : ''; ?>><u>U</u></button>
-                                    <button type="button" onclick="doCmd('insertUnorderedList')" <?php echo $is_viewer ? 'disabled' : ''; ?>>• لیست</button>
-                                    <button type="button" onclick="doCmd('insertOrderedList')" <?php echo $is_viewer ? 'disabled' : ''; ?>>۱. لیست</button>
-                                    <button type="button" onclick="doCmd('formatBlock', 'h2')" <?php echo $is_viewer ? 'disabled' : ''; ?>>H2</button>
-                                    <button type="button" onclick="doCmd('formatBlock', 'h3')" <?php echo $is_viewer ? 'disabled' : ''; ?>>H3</button>
-                                    <button type="button" onclick="doCmd('formatBlock', 'p')" <?php echo $is_viewer ? 'disabled' : ''; ?>>P</button>
+                                    <button type="button" onclick="doCmd('bold')"><b>B</b></button>
+                                    <button type="button" onclick="doCmd('italic')"><i>I</i></button>
+                                    <button type="button" onclick="doCmd('underline')"><u>U</u></button>
+                                    <button type="button" onclick="doCmd('insertUnorderedList')">• لیست</button>
+                                    <button type="button" onclick="doCmd('insertOrderedList')">۱. لیست</button>
+                                    <button type="button" onclick="doCmd('formatBlock', 'h2')">H2</button>
+                                    <button type="button" onclick="doCmd('formatBlock', 'h3')">H3</button>
+                                    <button type="button" onclick="doCmd('formatBlock', 'p')">P</button>
                                 </div>
                                 <div class="mini-editor" id="contentMiniEditor" contenteditable="<?php echo $is_viewer ? 'false' : 'true'; ?>"><?php echo $editing_post['content'] ?? ''; ?></div>
-                                <textarea name="content" id="contentEditor" style="display:none;"><?php echo $editing_post['content'] ?? ''; ?></textarea>
+                                <textarea name="content" id="contentEditor" style="display:none;"><?php echo e($editing_post['content'] ?? ''); ?></textarea>
                             </div>
                         </div>
                     </div>
-                    
                     <?php if (!$is_viewer): ?>
                     <div class="form-modern__footer">
                         <button type="submit" class="btn btn-primary"><?php echo $editing_post ? '💾 ذخیره' : '📤 انتشار'; ?></button>
@@ -265,38 +203,32 @@ $blog_categories = ['عمومی', 'معماری', 'عمران', 'تأسیسات'
                 </form>
             </div>
             <?php else: ?>
-            
             <div class="blog-header">
-                <span class="stat-pill">📝 <?php echo count($posts); ?> مقاله</span>
+                <span class="stat-pill">📝 <?php echo fa_number(count($posts)); ?> مقاله (MySQL)</span>
                 <?php if (!$is_viewer): ?><a href="manage-blog.php?add=1" class="btn btn-primary">➕ افزودن مقاله</a><?php endif; ?>
             </div>
-            
             <div class="blog-grid">
                 <?php foreach ($posts as $post): ?>
                 <div class="post-card">
                     <div class="post-image">
-                        <img src="../<?php echo $post['image'] ?? 'assets/default-post.jpg'; ?>" onerror="this.src='../assets/default-post.jpg'">
+                        <img src="../<?php echo e($post['image'] ?? 'assets/default-post.jpg'); ?>" onerror="this.src='../assets/default-post.jpg'">
                         <span class="post-status <?php echo ($post['status'] ?? 'published') === 'published' ? 'published' : 'draft'; ?>"><?php echo ($post['status'] ?? 'published') === 'published' ? '✓ منتشر' : '📝 پیش‌نویس'; ?></span>
                     </div>
                     <div class="post-body">
-                        <h3 class="post-title"><?php echo $post['title']; ?></h3>
-                        <?php if (!empty($post['excerpt'])): ?><p class="post-excerpt"><?php echo $post['excerpt']; ?></p><?php endif; ?>
-                        <span class="post-category">🏷️ <?php echo $post['category'] ?? 'عمومی'; ?></span>
-                        <div class="post-meta">
-                            <span>👤 <?php echo $post['author'] ?? 'مدیر'; ?></span>
-                            <span>📅 <?php echo format_date($post['date']); ?></span>
-                            <span>👁️ <?php echo $post['views'] ?? 0; ?></span>
-                        </div>
+                        <h3 class="post-title"><?php echo e($post['title']); ?></h3>
+                        <?php if (!empty($post['excerpt'])): ?><p class="post-excerpt"><?php echo e($post['excerpt']); ?></p><?php endif; ?>
+                        <span class="post-category">🏷️ <?php echo e($post['category'] ?? 'عمومی'); ?></span>
+                        <div class="post-meta"><span>👤 <?php echo e($post['author'] ?? 'مدیر'); ?></span><span>📅 <?php echo e(format_date($post['date'] ?? '')); ?></span><span>👁️ <?php echo fa_number((int)($post['views'] ?? 0)); ?></span></div>
                     </div>
                     <div class="post-footer">
                         <span style="font-size:10px;color:#999;"><?php echo e(is_array($post['tags'] ?? null) ? implode('، ', $post['tags']) : (string)($post['tags'] ?? '')); ?></span>
                         <div class="post-actions">
-                            <a href="../blog/post.php?slug=<?php echo $post['slug']; ?>" target="_blank" class="btn-icon">👁️</a>
-                            <a href="manage-blog.php?edit=<?php echo $post['id']; ?>" class="btn-icon"><?php echo $is_viewer ? '👁️' : '✏️'; ?></a>
+                            <a href="../blog/post.php?slug=<?php echo e($post['slug']); ?>" target="_blank" class="btn-icon">👁️</a>
+                            <a href="manage-blog.php?edit=<?php echo e($post['id'] ?? $post['uid']); ?>" class="btn-icon"><?php echo $is_viewer ? '👁️' : '✏️'; ?></a>
                             <?php if (!$is_viewer): ?>
                             <form method="POST" onsubmit="return confirm('حذف شود؟');" style="display:inline;">
-                                <input type="hidden" name="action" value="delete_post">
-                                <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                                <?php echo csrf_field(); ?>
+                                <input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?php echo e($post['id'] ?? $post['uid']); ?>">
                                 <button type="submit" class="btn-icon">🗑️</button>
                             </form>
                             <?php endif; ?>
@@ -308,9 +240,8 @@ $blog_categories = ['عمومی', 'معماری', 'عمران', 'تأسیسات'
             <?php endif; ?>
         </main>
     </div>
-    
     <script>
-    function doCmd(cmd, val = null) { if (<?php echo $is_viewer ? 'true' : 'false'; ?>) return; document.execCommand(cmd, false, val); document.getElementById('contentMiniEditor').focus(); syncEditor(); }
+    function doCmd(cmd, val = null) { document.execCommand(cmd, false, val); document.getElementById('contentMiniEditor').focus(); syncEditor(); }
     function syncEditor() { document.getElementById('contentEditor').value = document.getElementById('contentMiniEditor').innerHTML; }
     document.getElementById('contentMiniEditor')?.addEventListener('input', syncEditor);
     function previewImage(input) {

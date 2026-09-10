@@ -157,13 +157,62 @@ function current_admin(): ?array
     return $uid ? Users::find($uid) : null;
 }
 
+/**
+ * بررسی نشست کاربر در هر ناحیه.
+ * اگر کاربر حذف یا غیرفعال شده باشد، null برمی‌گرداند تا نشست نامعتبر شود.
+ */
+function odsco_verify_session(string $key, string $area): ?array
+{
+    $uid = $_SESSION[$key] ?? null;
+    if ($uid === null || $uid === '') {
+        return null;
+    }
+    $uid = (string)$uid;
+
+    if (!Db::ready()) {
+        // وقتی دیتابیس هنوز نصب نشده، برای سازگاری یک آرایه حداقلی برگردان
+        return ['uid' => $uid, 'role' => $_SESSION['admin_role'] ?? $_SESSION['messenger_user_role'] ?? $_SESSION['attendance_user_role'] ?? 'viewer'];
+    }
+
+    $user = Users::find($uid);
+    if (!$user) {
+        return null;
+    }
+    if (empty($user['is_active'])) {
+        return null;
+    }
+
+    switch ($area) {
+        case 'admin':
+            // پنل مدیریت: فقط فعال بودن کافی است (نقش در has_permission بررسی می‌شود)
+            break;
+        case 'messenger':
+            if (empty($user['messenger_enabled'])) {
+                return null;
+            }
+            break;
+        case 'client':
+            if ($user['role'] !== 'client' && Users::level((string)$user['role']) < Users::level('manager')) {
+                return null;
+            }
+            break;
+        case 'attendance':
+            if (empty($user['attendance_enabled']) && $user['role'] !== 'client') {
+                return null;
+            }
+            break;
+    }
+
+    return $user;
+}
+
 // ---------------------------------------------------------------------------
 // محافظت از صفحات
 // ---------------------------------------------------------------------------
 
 function check_login(): void
 {
-    if (!is_logged_admin()) {
+    if (!is_logged_admin() || odsco_verify_session('admin_id', 'admin') === null) {
         redirect('login.php');
     }
     if (login_blocked()) {
@@ -174,17 +223,17 @@ function check_login(): void
 
 function check_messenger_login(): void
 {
-    if (!is_logged_messenger()) redirect('login.php');
+    if (!is_logged_messenger() || odsco_verify_session('messenger_user_id', 'messenger') === null) redirect('login.php');
 }
 
 function check_client_login(): void
 {
-    if (!is_logged_client()) redirect('login.php');
+    if (!is_logged_client() || odsco_verify_session('client_user_id', 'client') === null) redirect('login.php');
 }
 
 function check_attendance_login(): void
 {
-    if (!is_logged_attendance()) redirect('login.php');
+    if (!is_logged_attendance() || odsco_verify_session('attendance_user_id', 'attendance') === null) redirect('login.php');
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +242,8 @@ function check_attendance_login(): void
 
 function has_permission(string $required_role): bool
 {
-    $role = (string)($_SESSION['admin_role'] ?? '');
+    $user = current_admin();
+    $role = (string)($user['role'] ?? $_SESSION['admin_role'] ?? '');
     return Users::level($role) >= Users::level($required_role);
 }
 

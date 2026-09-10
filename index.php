@@ -21,10 +21,9 @@ $home_projects = array_slice($home_projects, 0, 8);
 // دریافت مقالات
 $posts = get_blog_posts(4);
 
-// ============ دریافت کارفرمایان ============
-$clients = read_json('clients.json');
+// کارفرمایان — MySQL
+$clients = Clients::list();
 if (!is_array($clients)) $clients = [];
-// =========================================
 ?>
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -129,17 +128,17 @@ if (!is_array($clients)) $clients = [];
             
             <?php if (!empty($home_projects)): ?>
             <div class="projects__grid">
-                <?php foreach ($home_projects as $project): ?>
-                <a href="project/detail.php?id=<?php echo $project['id']; ?>" class="project-card">
+                <?php foreach ($home_projects as $project): $pid = $project['uid'] ?? $project['id'] ?? ''; ?>
+                <a href="project/detail.php?id=<?php echo e($pid); ?>" class="project-card">
                     <div class="project-img-box">
                         <?php 
                         $cover = $project['cover_image'] ?? ($project['images'][0] ?? ($project['image'] ?? 'assets/default-project.jpg'));
                         ?>
-                        <img src="<?php echo $cover; ?>" alt="<?php echo $project['title']; ?>" onerror="this.src='assets/default-project.jpg'">
+                        <img src="<?php echo e($cover); ?>" alt="<?php echo e($project['title']); ?>" onerror="this.src='assets/default-project.jpg'">
                     </div>
                     <div class="project-info">
-                        <span class="project-tag"><?php echo $project['category'] ?? 'عمومی'; ?></span>
-                        <h3 class="project-title"><?php echo $project['title']; ?></h3>
+                        <span class="project-tag"><?php echo e($project['category'] ?? 'عمومی'); ?></span>
+                        <h3 class="project-title"><?php echo e($project['title']); ?></h3>
                     </div>
                 </a>
                 <?php endforeach; ?>

@@ -4,6 +4,7 @@
  *  Odsco — میز کار پروژه‌ها
  * ----------------------------------------------------------------------------
  *  اعضا · وظایف (کانبان) · گزارش پیشرفت · هشدار به کارفرما
+ *  + اکشن create_project و فرم پروژهٔ جدید (درخواست کارفرما)
  * ============================================================================
  */
 
@@ -30,7 +31,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_guard();
     $act = (string)($_POST['act'] ?? '');
     try {
-        if ($act === 'add_member') {
+        if ($act === 'create_project') {
+            check_permission('manager');
+            $title = trim((string)($_POST['title'] ?? ''));
+            if ($title === '') throw new RuntimeException('عنوان پروژه الزامی است');
+
+            $slug = trim((string)($_POST['slug'] ?? ''));
+            if ($slug === '') $slug = create_slug($title);
+
+            $newUid = Projects::create([
+                'title'          => $title,
+                'slug'           => $slug,
+                'category'       => (string)($_POST['category'] ?? ''),
+                'description'    => (string)($_POST['description'] ?? ''),
+                'location'       => (string)($_POST['location'] ?? ''),
+                'client'         => (string)($_POST['client_name'] ?? ''),
+                'client_uid'     => (string)($_POST['client_uid'] ?? ''),
+                'manager_uid'    => (string)($_POST['manager_uid'] ?? current_admin_uid()),
+                'progress'       => (int)($_POST['progress'] ?? 0),
+                'status'         => (string)($_POST['status'] ?? 'active'),
+                'start_date'     => (string)($_POST['start_date'] ?? ''),
+                'end_date'       => (string)($_POST['end_date'] ?? ''),
+                'show_on_home'   => !empty($_POST['show_on_home']),
+                'client_visible' => !empty($_POST['client_visible']),
+                'year'           => (string)($_POST['year'] ?? date('Y')),
+                'area'           => (string)($_POST['area'] ?? ''),
+                'budget'         => (string)($_POST['budget'] ?? ''),
+            ]);
+
+            // اعضای اولیه
+            $members = [];
+            foreach ((array)($_POST['member_uid'] ?? []) as $i => $muid) {
+                if ((string)$muid === '') continue;
+                $members[] = [
+                    'user_uid' => (string)$muid,
+                    'role_in_project' => (string)(($_POST['member_role'] ?? [])[$i] ?? 'عضو تیم'),
+                ];
+            }
+            if ($members) {
+                ProjectMembers::sync($newUid, $members, current_admin_uid());
+            }
+
+            add_log('create_project', "پروژه {$title} در میزکار ساخته شد");
+            header('Location: workspace.php?project=' . rawurlencode($newUid) . '&ok=1');
+            exit;
+
+        } elseif ($act === 'add_member') {
             check_permission('manager');
             Projects::addMember($projectUid, [
                 'user_uid' => (string)($_POST['user_uid'] ?? ''),
@@ -94,8 +140,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $err = $e->getMessage();
     }
 
-    // برگشت به همان پروژه
-    if ($projectUid !== '') {
+    // برگشت به همان پروژه (به جز create که قبلاً redirect شد)
+    if ($projectUid !== '' && $act !== 'create_project') {
         header('Location: workspace.php?project=' . rawurlencode($projectUid) . '&ok=1');
         exit;
     }
@@ -116,6 +162,10 @@ if (!$project):
         if (!empty($p['end_date']) && strtotime((string)$p['end_date']) < time() && $p['progress'] < 100) $overdue++;
         if ($p['progress'] < 50 && !empty($p['end_date']) && strtotime((string)$p['end_date']) < strtotime('+7 days')) $atRisk++;
     }
+    // داده‌های فرم پروژه جدید
+    $allUsersForNew = Users::list(['active' => true, 'internal_only' => true]);
+    $allClientsForNew = Clients::list();
+    $categoriesForNew = Categories::list();
 ?>
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -133,10 +183,16 @@ if (!$project):
             <div class="welcome-section">
                 <div class="welcome-text">
                     <h1>📋 میز کار پروژه‌ها</h1>
-                    <p>یک پروژه را باز کنید تا اعضا، وظایف و گزارش پیشرفت را مدیریت کنید.</p>
+                    <p>یک پروژه را باز کنید تا اعضا، وظایف و گزارش پیشرفت را مدیریت کنید. یا پروژه جدید بسازید.</p>
                 </div>
-                <a href="manage-projects.php" class="btn">+ پروژه جدید</a>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <a href="#newProject" class="btn">+ پروژهٔ جدید</a>
+                    <a href="manage-projects.php" class="btn-secondary">📦 آرشیو تمام‌شده‌ها</a>
+                </div>
             </div>
+
+            <?php if ($msg): ?><div class="alert alert-success"><?php echo e($msg); ?></div><?php endif; ?>
+            <?php if ($err): ?><div class="alert alert-error"><?php echo e($err); ?></div><?php endif; ?>
 
             <div class="stats-grid" style="margin-bottom:22px">
                 <div class="stat-card" style="background:linear-gradient(135deg,#667eea,#764ba2)">
@@ -155,6 +211,92 @@ if (!$project):
                     <div class="stat-icon">✅</div>
                     <div class="stat-info"><h3><?php echo fa_number(count(array_filter($projects, fn($p) => (int)$p['progress'] >= 100))); ?></h3><p>تکمیل‌شده</p></div>
                 </div>
+            </div>
+
+            <!-- فرم پروژه جدید -->
+            <a id="newProject"></a>
+            <div style="background:#f7f9fc;border:1px solid #e6ebf2;border-radius:16px;padding:20px;margin-bottom:24px">
+                <h3 style="margin-bottom:14px">➕ پروژهٔ جدید</h3>
+                <p style="font-size:12.5px;color:#7c8aa0;margin-bottom:14px">پروژه جدید در میزکار بسازید، مدیر پروژه و اعضای اولیه را تعیین کنید. این پروژه‌ها در حال اجرا هستند و پس از تکمیل به آرشیو سایت منتقل می‌شوند.</p>
+                <form method="post" class="form-grid">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="act" value="create_project">
+                    <div class="form-group">
+                        <label>عنوان پروژه *</label>
+                        <input type="text" name="title" required placeholder="مثلاً اجرای سازه فلزی کارخانه">
+                    </div>
+                    <div class="form-group">
+                        <label>دسته‌بندی</label>
+                        <select name="category">
+                            <option value="">— انتخاب —</option>
+                            <?php foreach ($categoriesForNew as $cat): ?>
+                                <option value="<?php echo e($cat['name']); ?>"><?php echo e($cat['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>کارفرما</label>
+                        <select name="client_uid">
+                            <option value="">— بدون کارفرما —</option>
+                            <?php foreach ($allClientsForNew as $c): ?>
+                                <option value="<?php echo e($c['uid']); ?>"><?php echo e($c['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>مدیر پروژه</label>
+                        <select name="manager_uid">
+                            <option value="">— خودم —</option>
+                            <?php foreach ($allUsersForNew as $u): ?>
+                                <option value="<?php echo e($u['uid']); ?>"><?php echo e($u['full_name']); ?> (<?php echo e(Users::roleLabel((string)$u['role'])); ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>تاریخ شروع</label>
+                        <input type="date" name="start_date">
+                    </div>
+                    <div class="form-group">
+                        <label>مهلت پایان</label>
+                        <input type="date" name="end_date">
+                    </div>
+                    <div class="form-group">
+                        <label>پیشرفت اولیه (٪)</label>
+                        <input type="number" name="progress" min="0" max="100" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>وضعیت</label>
+                        <select name="status">
+                            <option value="active">در حال اجرا</option>
+                            <option value="planning">برنامه‌ریزی</option>
+                            <option value="paused">متوقف</option>
+                            <option value="completed">تمام‌شده</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>توضیحات</label>
+                        <textarea name="description" rows="3" placeholder="شرح کوتاه پروژه..."></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>اعضای اولیه</label>
+                        <div style="border:1px solid #e6ebf2;border-radius:12px;padding:12px;max-height:220px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;background:#fff">
+                            <?php foreach ($allUsersForNew as $u): ?>
+                            <label style="display:flex;align-items:center;gap:8px;background:#f7f9fc;border:1px solid #e6ebf2;border-radius:10px;padding:8px 10px;font-size:12.5px">
+                                <input type="checkbox" name="member_uid[]" value="<?php echo e($u['uid']); ?>" style="width:auto">
+                                <span style="flex:1"><?php echo e($u['full_name']); ?> <small style="color:#9aa7bb">(<?php echo e(Users::roleLabel((string)$u['role'])); ?>)</small></span>
+                                <input type="text" name="member_role[]" value="عضو تیم" style="width:84px;padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid #d8dfeb">
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div class="form-group full-width" style="display:flex;gap:12px;flex-wrap:wrap">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px"><input type="checkbox" name="client_visible" value="1"> نمایش برای کارفرما</label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px"><input type="checkbox" name="show_on_home" value="1"> نمایش در صفحه اصلی (فقط تمام‌شده‌ها)</label>
+                    </div>
+                    <div class="form-group full-width">
+                        <button type="submit" class="btn">🏗️ ساخت پروژه</button>
+                    </div>
+                </form>
             </div>
 
             <div class="table-wrap">
@@ -184,7 +326,7 @@ if (!$project):
                             <td><a href="?project=<?php echo e($p['uid']); ?>" class="btn-sm">باز کردن</a></td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if (!$projects): ?><tr><td colspan="7" style="text-align:center;color:#7c8aa0">پروژه‌ای ثبت نشده است</td></tr><?php endif; ?>
+                    <?php if (!$projects): ?><tr><td colspan="7" style="text-align:center;color:#7c8aa0">پروژه‌ای ثبت نشده است — از فرم بالا پروژه جدید بسازید</td></tr><?php endif; ?>
                     </tbody>
                 </table>
             </div>

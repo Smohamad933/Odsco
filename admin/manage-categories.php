@@ -1,7 +1,15 @@
 <?php
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
-require_once '../includes/logger.php';
+/**
+ * ============================================================================
+ *  Odsco — مدیریت دسته‌بندی‌ها (MySQL)
+ * ============================================================================
+ */
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/logger.php';
 
 check_login();
 
@@ -9,7 +17,7 @@ $message = '';
 $error = '';
 $editing_category = null;
 $show_form = isset($_GET['add']) || isset($_GET['edit']);
-$is_viewer = ($_SESSION['admin_role'] ?? '') === 'viewer';
+$is_viewer = is_viewer();
 
 if (isset($_SESSION['error_message'])) {
     $error = $_SESSION['error_message'];
@@ -17,84 +25,97 @@ if (isset($_SESSION['error_message'])) {
 }
 
 if (isset($_GET['edit'])) {
-    $categories = read_json('categories.json');
-    foreach ($categories as $cat) {
-        if ($cat['id'] === $_GET['edit']) {
+    $uid = (string)$_GET['edit'];
+    $all = Categories::list();
+    foreach ($all as $cat) {
+        if (($cat['id'] ?? $cat['uid']) === $uid) {
             $editing_category = $cat;
             break;
+        }
+    }
+    // fallback direct DB
+    if (!$editing_category && Db::ready()) {
+        $row = Db::i()->one('SELECT * FROM ' . Db::i()->quoteIdent(Db::i()->t('categories')) . ' WHERE uid = ?', [$uid]);
+        if ($row) {
+            $editing_category = [
+                'id' => $row['uid'], 'uid' => $row['uid'],
+                'name' => $row['name'], 'slug' => $row['slug'],
+                'description' => $row['description'] ?? '',
+                'icon' => $row['icon'] ?? '🏷️',
+                'color' => $row['color'] ?? '#1a1a1a',
+            ];
         }
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    csrf_guard();
     if ($is_viewer) {
         $error = '⛔ شما فقط بیننده هستید و دسترسی به تغییرات ندارید!';
     } else {
-        if ($_POST['action'] === 'add_category') {
-            $categories = read_json('categories.json');
-            $new_category = [
-                'id' => 'cat_' . uniqid(),
-                'name' => sanitize($_POST['name']),
-                'slug' => create_slug($_POST['name']),
-                'description' => sanitize($_POST['description'] ?? ''),
-                'icon' => sanitize($_POST['icon'] ?? '🏷️'),
-                'color' => sanitize($_POST['color'] ?? '#1a1a1a')
-            ];
-            $exists = false;
-            foreach ($categories as $cat) {
-                if ($cat['name'] === $new_category['name']) { $exists = true; break; }
-            }
-            if (!$exists) {
-                $categories[] = $new_category;
-                write_json('categories.json', $categories);
-                $message = '✅ دسته‌بندی اضافه شد';
-                $show_form = false;
+        $act = (string)$_POST['action'];
+        if ($act === 'add_category') {
+            $name = trim((string)($_POST['name'] ?? ''));
+            if ($name === '') {
+                $error = 'نام دسته‌بندی الزامی است';
             } else {
-                $error = '❌ این دسته‌بندی وجود دارد';
-            }
-        }
-        
-        if ($_POST['action'] === 'edit_category') {
-            $category_id = $_POST['category_id'];
-            $categories = read_json('categories.json');
-            foreach ($categories as &$cat) {
-                if ($cat['id'] === $category_id) {
-                    $cat['name'] = sanitize($_POST['name']);
-                    $cat['description'] = sanitize($_POST['description'] ?? '');
-                    $cat['icon'] = sanitize($_POST['icon'] ?? '🏷️');
-                    $cat['color'] = sanitize($_POST['color'] ?? '#1a1a1a');
-                    break;
+                $exists = false;
+                foreach (Categories::list() as $cat) {
+                    if (mb_strtolower($cat['name']) === mb_strtolower($name)) { $exists = true; break; }
+                }
+                if ($exists) {
+                    $error = '❌ این دسته‌بندی وجود دارد';
+                } else {
+                    Categories::create([
+                        'name' => $name,
+                        'description' => (string)($_POST['description'] ?? ''),
+                        'icon' => (string)($_POST['icon'] ?? '🏷️'),
+                        'color' => (string)($_POST['color'] ?? '#1a1a1a'),
+                    ]);
+                    add_log('add_category', "دسته‌بندی {$name} اضافه شد");
+                    $message = '✅ دسته‌بندی اضافه شد';
+                    $show_form = false;
                 }
             }
-            write_json('categories.json', $categories);
-            $message = '✅ دسته‌بندی ویرایش شد';
-            $show_form = false;
-        }
-        
-        if ($_POST['action'] === 'delete_category') {
-            $category_id = $_POST['category_id'];
-            $categories = read_json('categories.json');
-            foreach ($categories as $key => $cat) {
-                if ($cat['id'] === $category_id) {
-                    unset($categories[$key]);
-                    write_json('categories.json', array_values($categories));
-                    $message = '✅ دسته‌بندی حذف شد';
-                    break;
-                }
+        } elseif ($act === 'edit_category') {
+            $category_id = (string)($_POST['category_id'] ?? '');
+            if ($category_id === '') {
+                $error = 'شناسه نامعتبر';
+            } else {
+                Categories::update($category_id, [
+                    'name' => (string)($_POST['name'] ?? ''),
+                    'description' => (string)($_POST['description'] ?? ''),
+                    'icon' => (string)($_POST['icon'] ?? '🏷️'),
+                    'color' => (string)($_POST['color'] ?? '#1a1a1a'),
+                ]);
+                add_log('edit_category', "دسته‌بندی {$category_id} ویرایش شد");
+                $message = '✅ دسته‌بندی ویرایش شد';
+                $show_form = false;
+            }
+        } elseif ($act === 'delete_category') {
+            $category_id = (string)($_POST['category_id'] ?? '');
+            if ($category_id !== '') {
+                Categories::delete($category_id);
+                add_log('delete_category', "دسته‌بندی {$category_id} حذف شد");
+                $message = '✅ دسته‌بندی حذف شد';
             }
         }
     }
 }
 
-$categories = read_json('categories.json');
+$categories = Categories::list();
 if (empty($categories)) {
-    $categories = [
-        ['id' => 'cat_1', 'name' => 'معماری و سازه', 'slug' => 'architecture', 'icon' => '🏗️', 'color' => '#3742fa'],
-        ['id' => 'cat_2', 'name' => 'تأسیسات برقی و مکانیکی', 'slug' => 'mechanic', 'icon' => '⚡', 'color' => '#ffa502'],
-        ['id' => 'cat_3', 'name' => 'صنعتی و هیدرولیکی', 'slug' => 'industrial', 'icon' => '🏭', 'color' => '#2ed573'],
-        ['id' => 'cat_4', 'name' => 'عمرانی و ژئوتکنیک', 'slug' => 'civil', 'icon' => '📐', 'color' => '#ff4757']
+    // پیش‌فرض‌ها را بساز
+    $defaults = [
+        ['name' => 'معماری و سازه', 'slug' => 'architecture', 'icon' => '🏗️', 'color' => '#3742fa'],
+        ['name' => 'تأسیسات برقی و مکانیکی', 'slug' => 'mechanic', 'icon' => '⚡', 'color' => '#ffa502'],
+        ['name' => 'صنعتی و هیدرولیکی', 'slug' => 'industrial', 'icon' => '🏭', 'color' => '#2ed573'],
+        ['name' => 'عمرانی و ژئوتکنیک', 'slug' => 'civil', 'icon' => '📐', 'color' => '#ff4757'],
     ];
-    write_json('categories.json', $categories);
+    foreach ($defaults as $d) {
+        Categories::create($d);
+    }
+    $categories = Categories::list();
 }
 
 $icons_list = ['🏗️', '⚡', '🏭', '📐', '🔧', '🚗', '🏠', '🏢', '🌉', '🛣️', '💡', '🔥', '💧', '🌊', '📋', '🎨'];
@@ -161,29 +182,30 @@ $colors_list = ['#3742fa', '#ff4757', '#ffa502', '#2ed573', '#a55eea', '#1e90ff'
                 <?php if ($is_viewer): ?><span class="badge" style="background:#fff8e1;color:#e65100;">👁️ حالت مشاهده</span><?php endif; ?>
             </header>
             
-            <?php if ($message): ?><div class="alert alert-success"><?php echo $message; ?></div><?php endif; ?>
-            <?php if ($error): ?><div class="alert alert-error"><?php echo $error; ?></div><?php endif; ?>
+            <?php if ($message): ?><div class="alert alert-success"><?php echo e($message); ?></div><?php endif; ?>
+            <?php if ($error): ?><div class="alert alert-error"><?php echo e($error); ?></div><?php endif; ?>
             <?php if ($is_viewer): ?><div class="viewer-banner">⛔ شما فقط بیننده هستید!</div><?php endif; ?>
             
             <?php if ($show_form): ?>
             <div class="form-modern">
                 <div class="form-modern__header">
-                    <h2><?php echo $editing_category ? '👁️ مشاهده دسته‌بندی' : '➕ افزودن دسته‌بندی'; ?></h2>
+                    <h2><?php echo $editing_category ? '✏️ ویرایش دسته‌بندی' : '➕ افزودن دسته‌بندی'; ?></h2>
                     <a href="manage-categories.php" class="btn-back">← بازگشت</a>
                 </div>
                 <form method="POST">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="<?php echo $editing_category ? 'edit_category' : 'add_category'; ?>">
-                    <?php if ($editing_category): ?><input type="hidden" name="category_id" value="<?php echo $editing_category['id']; ?>"><?php endif; ?>
+                    <?php if ($editing_category): ?><input type="hidden" name="category_id" value="<?php echo e($editing_category['id'] ?? $editing_category['uid']); ?>"><?php endif; ?>
                     
                     <div class="form-modern__body">
                         <div class="form-grid-2">
                             <div class="form-group">
                                 <label>نام *</label>
-                                <input type="text" name="name" value="<?php echo $editing_category['name'] ?? ''; ?>" <?php echo $is_viewer ? 'disabled' : 'required'; ?>>
+                                <input type="text" name="name" value="<?php echo e($editing_category['name'] ?? ''); ?>" <?php echo $is_viewer ? 'disabled' : 'required'; ?>>
                             </div>
                             <div class="form-group">
                                 <label>توضیحات</label>
-                                <input type="text" name="description" value="<?php echo $editing_category['description'] ?? ''; ?>" <?php echo $is_viewer ? 'disabled' : ''; ?>>
+                                <input type="text" name="description" value="<?php echo e($editing_category['description'] ?? ''); ?>" <?php echo $is_viewer ? 'disabled' : ''; ?>>
                             </div>
                             <div class="form-group full">
                                 <label>آیکون:</label>
@@ -194,7 +216,7 @@ $colors_list = ['#3742fa', '#ff4757', '#ffa502', '#2ed573', '#a55eea', '#1e90ff'
                                     <button type="button" class="icon-option <?php echo $selected; ?> <?php echo $is_viewer ? 'disabled' : ''; ?>" onclick="<?php echo $is_viewer ? '' : "selectIcon(this, '$icon')"; ?>"><?php echo $icon; ?></button>
                                     <?php endforeach; ?>
                                 </div>
-                                <input type="hidden" name="icon" id="iconInput" value="<?php echo $editing_category['icon'] ?? '🏷️'; ?>">
+                                <input type="hidden" name="icon" id="iconInput" value="<?php echo e($editing_category['icon'] ?? '🏷️'); ?>">
                             </div>
                             <div class="form-group full">
                                 <label>رنگ:</label>
@@ -205,7 +227,7 @@ $colors_list = ['#3742fa', '#ff4757', '#ffa502', '#2ed573', '#a55eea', '#1e90ff'
                                     <button type="button" class="color-option <?php echo $selected; ?> <?php echo $is_viewer ? 'disabled' : ''; ?>" style="background:<?php echo $color; ?>" onclick="<?php echo $is_viewer ? '' : "selectColor(this, '$color')"; ?>"></button>
                                     <?php endforeach; ?>
                                 </div>
-                                <input type="hidden" name="color" id="colorInput" value="<?php echo $editing_category['color'] ?? '#1a1a1a'; ?>">
+                                <input type="hidden" name="color" id="colorInput" value="<?php echo e($editing_category['color'] ?? '#1a1a1a'); ?>">
                             </div>
                         </div>
                     </div>
@@ -221,22 +243,23 @@ $colors_list = ['#3742fa', '#ff4757', '#ffa502', '#2ed573', '#a55eea', '#1e90ff'
             <?php else: ?>
             
             <div class="categories-header">
-                <span class="stat-pill">📊 <?php echo count($categories); ?> دسته‌بندی</span>
+                <span class="stat-pill">📊 <?php echo fa_number(count($categories)); ?> دسته‌بندی (MySQL)</span>
                 <?php if (!$is_viewer): ?><a href="manage-categories.php?add=1" class="btn btn-primary">➕ افزودن</a><?php endif; ?>
             </div>
             
             <div class="categories-grid">
                 <?php foreach ($categories as $cat): ?>
-                <div class="category-card" style="--cat-color: <?php echo $cat['color'] ?? '#1a1a1a'; ?>;">
-                    <div class="category-icon"><?php echo $cat['icon'] ?? '🏷️'; ?></div>
-                    <h3 class="category-name"><?php echo $cat['name']; ?></h3>
-                    <div class="category-slug">/<?php echo $cat['slug']; ?></div>
+                <div class="category-card" style="--cat-color: <?php echo e($cat['color'] ?? '#1a1a1a'); ?>;">
+                    <div class="category-icon"><?php echo e($cat['icon'] ?? '🏷️'); ?></div>
+                    <h3 class="category-name"><?php echo e($cat['name']); ?></h3>
+                    <div class="category-slug">/<?php echo e($cat['slug'] ?? ''); ?></div>
                     <div class="category-actions">
-                        <a href="manage-categories.php?edit=<?php echo $cat['id']; ?>" class="btn-icon" title="مشاهده/ویرایش"><?php echo $is_viewer ? '👁️' : '✏️'; ?></a>
+                        <a href="manage-categories.php?edit=<?php echo e($cat['id'] ?? $cat['uid']); ?>" class="btn-icon" title="ویرایش"><?php echo $is_viewer ? '👁️' : '✏️'; ?></a>
                         <?php if (!$is_viewer): ?>
                         <form method="POST" onsubmit="return confirm('حذف شود؟');" style="display:inline;">
+                            <?php echo csrf_field(); ?>
                             <input type="hidden" name="action" value="delete_category">
-                            <input type="hidden" name="category_id" value="<?php echo $cat['id']; ?>">
+                            <input type="hidden" name="category_id" value="<?php echo e($cat['id'] ?? $cat['uid']); ?>">
                             <button type="submit" class="btn-icon">🗑️</button>
                         </form>
                         <?php endif; ?>
