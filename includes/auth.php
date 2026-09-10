@@ -207,13 +207,102 @@ function odsco_verify_session(string $key, string $area): ?array
 }
 
 // ---------------------------------------------------------------------------
+// ورود یکپارچه (SSO) — یک حساب برای همه پنل‌ها
+// ---------------------------------------------------------------------------
+
+/**
+ * نشست‌های کاربر را برای همه نواحی مجاز می‌سازد.
+ */
+function odsco_build_sessions(array $user, string $device = 'web'): void
+{
+    $isInternal = Users::level((string)($user['role'] ?? '')) >= Users::level('viewer') || ($user['role'] ?? '') !== 'client';
+    $isClient = ($user['role'] ?? '') === 'client' || !empty($user['client_uid']);
+
+    if ($isInternal) {
+        $_SESSION['admin_id'] = $user['uid'];
+        $_SESSION['admin_user'] = $user['username'];
+        $_SESSION['admin_role'] = $user['role'];
+        $_SESSION['admin_name'] = $user['full_name'];
+        $_SESSION['admin_photo'] = $user['photo'];
+        $_SESSION['admin_client'] = $user['client_uid'];
+    }
+    if (!empty($user['messenger_enabled'])) {
+        $_SESSION['messenger_user_id'] = $user['uid'];
+        $_SESSION['messenger_user_name'] = $user['full_name'];
+        $_SESSION['messenger_user_role'] = $user['role'];
+        $_SESSION['messenger_user_photo'] = $user['photo'];
+        $_SESSION['messenger_user_client'] = $user['client_uid'];
+        if (class_exists('Messenger')) {
+            try { Messenger::registerDevice($user['uid'], $device); Messenger::touchPresence($user['uid']); } catch (Throwable $e) {}
+        }
+    }
+    if ($isClient) {
+        $_SESSION['client_user_id'] = $user['uid'];
+        $_SESSION['client_user_name'] = $user['full_name'];
+        $_SESSION['client_uid'] = $user['client_uid'];
+        $_SESSION['client_user_photo'] = $user['photo'];
+    }
+    if (!empty($user['attendance_enabled']) || $isInternal) {
+        $_SESSION['attendance_user_id'] = $user['uid'];
+        $_SESSION['attendance_user_name'] = $user['full_name'];
+        $_SESSION['attendance_user_role'] = $user['role'];
+        $_SESSION['attendance_user_photo'] = $user['photo'];
+    }
+}
+
+/**
+ * ورود یکپارچه — رمز را چک می‌کند و همه نشست‌های مجاز را می‌سازد.
+ * @return array{success:bool,message?:string,user?:array}
+ */
+function odsco_unified_login(string $username, string $password): array
+{
+    $username = trim($username);
+    if ($username === '' || $password === '') {
+        return ['success'=>false,'message'=>'نام کاربری و رمز عبور را وارد کنید'];
+    }
+    $user = Users::findByUsername($username);
+    if (!$user || !password_verify($password, (string)$user['password'])) {
+        odsco_throttle_login();
+        ActivityLog::add('login_failed', "تلاش ناموفق ورود یکپارچه {$username}", $username);
+        return ['success'=>false,'message'=>'نام کاربری یا رمز عبور اشتباه است'];
+    }
+    if (empty($user['is_active'])) {
+        return ['success'=>false,'message'=>'⛔ حساب غیرفعال است'];
+    }
+    if (password_needs_rehash((string)$user['password'], PASSWORD_DEFAULT)) {
+        Users::setPassword($user['uid'], $password);
+    }
+    if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
+    Users::touchLogin($user['uid']);
+    login_reset_throttle();
+    $device = function_exists('detect_device') ? detect_device() : 'web';
+    odsco_build_sessions($user, $device);
+    ActivityLog::add('unified_login', "ورود یکپارچه {$username}", $username);
+    return ['success'=>true,'user'=>$user];
+}
+
+function is_logged_any(): bool
+{
+    return is_logged_admin() || is_logged_messenger() || is_logged_client() || is_logged_attendance();
+}
+
+// ---------------------------------------------------------------------------
 // محافظت از صفحات
 // ---------------------------------------------------------------------------
 
 function check_login(): void
 {
     if (!is_logged_admin() || odsco_verify_session('admin_id', 'admin') === null) {
-        redirect('login.php');
+        // اگر با SSO وارد شده و نقش ادمین دارد، نشست ادمین را بازسازی کن
+        $uid = $_SESSION['messenger_user_id'] ?? $_SESSION['attendance_user_id'] ?? $_SESSION['client_user_id'] ?? null;
+        if ($uid) {
+            $u = Users::find((string)$uid);
+            if ($u && !empty($u['is_active']) && Users::level((string)$u['role']) >= Users::level('viewer')) {
+                odsco_build_sessions($u);
+                if (is_logged_admin() && odsco_verify_session('admin_id','admin')!==null) return;
+            }
+        }
+        redirect('../login.php');
     }
     if (login_blocked()) {
         http_response_code(429);
@@ -223,17 +312,48 @@ function check_login(): void
 
 function check_messenger_login(): void
 {
-    if (!is_logged_messenger() || odsco_verify_session('messenger_user_id', 'messenger') === null) redirect('login.php');
+    if (!is_logged_messenger() || odsco_verify_session('messenger_user_id', 'messenger') === null) {
+        // سعی کن از نشست ادمین/حضور و غیاب، پیام‌رسان را بسازی
+        $uid = $_SESSION['admin_id'] ?? $_SESSION['attendance_user_id'] ?? null;
+        if ($uid) {
+            $u = Users::find((string)$uid);
+            if ($u && !empty($u['messenger_enabled'])) {
+                odsco_build_sessions($u);
+                if (is_logged_messenger()) return;
+            }
+        }
+        redirect('../login.php?redirect=messenger/index.php');
+    }
 }
 
 function check_client_login(): void
 {
-    if (!is_logged_client() || odsco_verify_session('client_user_id', 'client') === null) redirect('login.php');
+    if (!is_logged_client() || odsco_verify_session('client_user_id', 'client') === null) {
+        $uid = $_SESSION['admin_id'] ?? $_SESSION['messenger_user_id'] ?? null;
+        if ($uid) {
+            $u = Users::find((string)$uid);
+            if ($u && (($u['role']==='client') || !empty($u['client_uid']) || Users::level((string)$u['role'])>=Users::level('manager'))) {
+                odsco_build_sessions($u);
+                if (is_logged_client()) return;
+            }
+        }
+        redirect('../login.php?redirect=client/index.php');
+    }
 }
 
 function check_attendance_login(): void
 {
-    if (!is_logged_attendance() || odsco_verify_session('attendance_user_id', 'attendance') === null) redirect('login.php');
+    if (!is_logged_attendance() || odsco_verify_session('attendance_user_id', 'attendance') === null) {
+        $uid = $_SESSION['admin_id'] ?? $_SESSION['messenger_user_id'] ?? null;
+        if ($uid) {
+            $u = Users::find((string)$uid);
+            if ($u && (!empty($u['attendance_enabled']) || Users::level((string)$u['role'])>=Users::level('viewer'))) {
+                odsco_build_sessions($u);
+                if (is_logged_attendance()) return;
+            }
+        }
+        redirect('../login.php?redirect=attendance/index.php');
+    }
 }
 
 // ---------------------------------------------------------------------------

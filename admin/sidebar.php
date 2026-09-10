@@ -49,8 +49,9 @@ $_adm_link = function (string $href, string $icon, string $label, int $badge = 0
         <?php echo $_adm_link('dashboard.php', '📊', 'داشبورد'); ?>
 
         <div class="nav-section-title">مدیریت پروژه</div>
-        <?php echo $_adm_link('manage-projects.php', '🏗️', 'پروژه‌ها'); ?>
-        <?php echo $_adm_link('workspace.php', '📋', 'میز کار پروژه‌ها'); ?>
+        <?php echo $_adm_link('manage-ongoing-projects.php', '🚧', 'در حال انجام'); ?>
+        <?php echo $_adm_link('workspace.php', '📋', 'میز کار (کانبان)'); ?>
+        <?php echo $_adm_link('manage-projects.php', '📦', 'آرشیو سایت (تمام‌شده)'); ?>
         <?php echo $_adm_link('manage-categories.php', '🏷️', 'دسته‌بندی‌ها'); ?>
         <?php echo $_adm_link('manage-clients.php', '🏢', 'کارفرمایان'); ?>
 
